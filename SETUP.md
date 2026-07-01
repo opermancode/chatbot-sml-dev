@@ -1,52 +1,67 @@
-# Sangreen Weather Bot — Setup Guide (Ubuntu)
+# Sangreen Weather Bot — Setup Guide
 
 ## Prerequisites
-- Ubuntu server (22.04+)
-- Twilio account (WhatsApp Sandbox)
-- ngrok account (free)
+
+- **Server**: Ubuntu 22.04+ (any VPS or local machine)
+- **Twilio account** with WhatsApp Sandbox enabled (free)
+- **ngrok account** (free at https://ngrok.com)
+- **Python 3.10+** and `pip`
 
 ---
 
-## 1. Install dependencies
+## 1. Install system dependencies
 
 ```bash
-sudo apt update -y
-sudo apt upgrade -y
-sudo apt install -y python3 python3-pip git
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y python3 python3-pip python3-venv git curl
 ```
 
-## 2. Clone the project
+## 2. Clone the repo
 
 ```bash
 git clone <your-repo-url>
-cd <repo-name>
+cd weather-chatbot
 ```
 
-## 3. Create .env file
+## 3. Set up environment
 
 ```bash
 cp .env.example .env
 nano .env
 ```
 
-Set these values:
+Fill in every field:
 
-| Variable | What to put |
-|---|---|
-| `SECRET_KEY` | Random string (e.g. `openssl rand -hex 32`) |
-| `TWILIO_ACCOUNT_SID` | From Twilio Console |
-| `TWILIO_AUTH_TOKEN` | From Twilio Console |
-| `TWILIO_WHATSAPP_NUMBER` | `+14155238886` (sandbox) |
-| `ADMIN_USERNAME` | Your choice |
-| `ADMIN_PASSWORD` | Your choice |
+| Variable | Description | Example |
+|---|---|---|
+| `SECRET_KEY` | Random string for Flask sessions | `openssl rand -hex 32` |
+| `FLASK_ENV` | Keep `development` | `development` |
+| `FLASK_DEBUG` | Keep `1` for now | `1` |
+| `DATABASE_URL` | Leave as default (auto-resolved to absolute path) | `sqlite:///chatbot.db` |
+| `TWILIO_ACCOUNT_SID` | From Twilio Console → Account → API Credentials | `ACxxxxxxxxxx` |
+| `TWILIO_AUTH_TOKEN` | From Twilio Console (same page) | `abc123def456` |
+| `TWILIO_WHATSAPP_NUMBER` | Twilio Sandbox number (see WhatsApp → Sandbox) | `+14155238886` |
+| `ADMIN_USERNAME` | Your admin login | `admin` |
+| `ADMIN_PASSWORD` | Your admin password (change this!) | `your-strong-password` |
+| `WHATSAPP_PROVIDER` | Keep `twilio` for now | `twilio` |
+
+> **Note**: `META_*` fields are for future production use — leave them as-is.
 
 ## 4. Install Python packages
 
 ```bash
-pip3 install --break-system-packages -r requirements.txt
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
 ```
 
-## 5. Install ngrok
+If you get `externally-managed-environment` error (Ubuntu 24.04+):
+
+```bash
+pip install --break-system-packages -r requirements.txt
+```
+
+## 5. Install & authenticate ngrok
 
 ```bash
 curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null
@@ -54,70 +69,159 @@ echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | sudo tee /etc/apt/
 sudo apt update && sudo apt install -y ngrok
 ```
 
-## 6. Start the app
+Authenticate your ngrok agent (get the token from https://dashboard.ngrok.com/get-started/your-authtoken):
+
+```bash
+ngrok config add-authtoken YOUR_NGROK_AUTHTOKEN
+```
+
+## 6. Start the Flask app
 
 ```bash
 nohup python3 app.py > app.log 2>&1 &
 ```
 
-Check it's running:
+Verify it's running:
+
 ```bash
-curl http://localhost:5000/admin/login
+curl -s http://localhost:5000/admin/login | head -c 100
 # Should return HTML (login page)
+```
+
+Check logs if something went wrong:
+
+```bash
+tail -20 app.log
 ```
 
 ## 7. Start ngrok
 
 ```bash
-nohup ngrok http 5000 > ngrok.log 2>&1 &
+nohup ngrok http 5000 --log=stdout > ngrok.log 2>&1 &
 ```
 
-Get the ngrok URL:
+Get your public URL:
+
 ```bash
-curl -s http://127.0.0.1:4040/api/tunnels | python3 -c "import sys,json; print(json.load(sys.stdin)['tunnels'][0]['public_url'])"
+curl -s http://127.0.0.1:4040/api/tunnels | python3 -c "import sys,json; t=json.load(sys.stdin)['tunnels']; print(t[0]['public_url'])"
 ```
 
-## 8. Configure Twilio
+It will look like `https://xxxx-xx-xx-xx-xx.ngrok-free.app`
 
-1. Go to [Twilio Console](https://console.twilio.com) → WhatsApp → Sandbox
-2. Set **"When a message comes in"** to:
+## 8. Configure Twilio WhatsApp Sandbox
+
+1. Go to **[Twilio Console](https://console.twilio.com)** → **Messaging** → **Try it out** → **Send a WhatsApp message**
+2. Under **Sandbox**, note the sandbox number (e.g. `+14155238886`)
+3. Set **"When a message comes in"** to:
    ```
-   https://your-ngrok-id.ngrok-free.dev/webhook/whatsapp
+   https://your-ngrok-id.ngrok-free.app/webhook/whatsapp
    ```
-3. Set **Method** to `HTTP POST`
-4. Save
+4. Set **Method** → `HTTP POST`
+5. Click **Save**
 
-## 9. Log in to admin
+> ⚠️ If your ngrok URL changes (free tier resets on restart), repeat step 8 with the new URL.
+
+## 9. Create admin user & log in
+
+The first user is created automatically on startup using the credentials from `.env`.
+
+Open your browser:
 
 ```
-http://<YOUR-EC2-PUBLIC-IP>:5000/admin
+http://<YOUR-SERVER-IP>:5000/admin/login
 ```
 
-Default: `admin` / `changeme123` (or whatever you set in `.env`)
+Default: **admin** / **changeme123** (or whatever you set in `.env`)
 
-## 10. Add users & test
+## 10. Add a WhatsApp user
 
-1. In admin → **Users** → **Add User**
-2. Enter name and phone (with country code, e.g. `+919876543210`)
-3. Save
-4. From your phone, WhatsApp the Twilio sandbox number (`+14155238886`) with the join code
-5. Then send "Hi" — you'll get the welcome message
+1. In admin portal → **Users** → **Add User**
+2. Fill in:
+   - **Name**: e.g. `Omkar`
+   - **Phone**: Full number with country code (e.g. `+919146322662`)
+   - **City**: e.g. `Pune`
+   - **Site**: e.g. `Pune Solar Plant`
+   - **Group**: (optional, for broadcasting)
+3. Click **Save**
+
+## 11. Test from your phone
+
+1. Open WhatsApp on your phone
+2. Send the **join code** (found in Twilio Sandbox page, usually `join <something>`) to the sandbox number (`+14155238866`)
+3. Wait for Twilio's confirmation reply
+4. Send **"hi"** to the same number
+5. You should receive the welcome message with the weather menu
+
+---
+
+## File structure (what's in this repo)
+
+```
+weather-chatbot/
+├── .env.example           # Template — copy to .env and fill
+├── .gitignore
+├── app.py                 # Main Flask app with routes
+├── config.py              # Config from .env (auto-resolves DB path)
+├── models.py              # DB models (User, Group, ChatLog, AdminUser, Setting)
+├── requirements.txt       # Python dependencies
+├── SETUP.md               # This file
+├── services/
+│   ├── __init__.py
+│   ├── chatbot.py         # Bot state machine, menu logic, geocoding
+│   ├── twilio_service.py  # Send WhatsApp via Twilio API
+│   └── weather_service.py # Open-Meteo weather (current + hourly forecast, IST tz)
+├── templates/
+│   └── admin/             # Tailwind HTML templates
+│       ├── base.html
+│       ├── login.html
+│       ├── dashboard.html
+│       ├── users.html
+│       ├── groups.html
+│       ├── broadcast.html
+│       ├── chats.html
+│       └── settings.html
+└── static/                # (empty — templates use Tailwind CDN)
+```
 
 ---
 
 ## Useful commands
 
-| Command | What it does |
+| What you want | Command |
 |---|---|
-| `tail -f app.log` | Watch app logs |
-| `tail -f ngrok.log` | Watch ngrok logs |
-| `pkill -f "python3 app.py"` | Stop Flask |
-| `pkill ngrok` | Stop ngrok |
-| `lsof -i :5000` | Check if port 5000 is in use |
+| View app logs | `tail -f app.log` |
+| View ngrok logs | `tail -f ngrok.log` |
+| Restart Flask | `pkill -f "python3 app.py" && nohup python3 app.py > app.log 2>&1 &` |
+| Stop ngrok | `pkill ngrok` |
+| Open Python shell | `source venv/bin/activate && python3` |
+| Check port 5000 | `lsof -i :5000` |
+| Get ngrok URL | `curl -s http://127.0.0.1:4040/api/tunnels \| python3 -c "import sys,json;print(json.load(sys.stdin)['tunnels'][0]['public_url'])"` |
 
-## Switch to Meta (later)
+---
 
-1. Get Meta credentials (see admin Settings page)
-2. Enter them in admin → Settings
-3. Change provider dropdown to `Meta`
-4. Save — no code changes needed
+## Troubleshooting
+
+**App crashes with `PermissionError: '/instance'`**
+→ You ran `python3 app.py` from a wrong directory. Always run from the repo root (`~/weather-chatbot`). The config.py now handles this automatically.
+
+**Webhook returns empty 200 / bot doesn't reply**
+→ The phone number format might not match. Check the user's phone in admin — must include `+` and country code (e.g. `+919146322662`).
+
+**"User is not registered" even after adding**
+→ The user needs to first send the Twilio Sandbox join code to activate their number for the sandbox.
+
+**ngrok URL keeps changing**
+→ Free ngrok URLs change on every restart. Upgrade to a paid plan for fixed subdomain, or update the Twilio webhook URL each time.
+
+---
+
+## Next: Switch to Meta Cloud API (Production)
+
+When ready to move to production with a business WhatsApp number:
+
+1. Enter Meta credentials in admin → **Settings**
+2. Change **Provider** dropdown from `twilio` to `meta`
+3. Click **Save**
+4. Update webhook URL in Meta Developer Console to point to your server
+
+No code changes needed — the provider toggle is built in.

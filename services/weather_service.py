@@ -1,4 +1,6 @@
+import re
 import requests
+from datetime import datetime
 
 OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
 
@@ -23,8 +25,8 @@ def get_weather(lat: float, lon: float):
             "wind_gusts_10m", "wind_direction_10m",
             "wind_speed_80m", "wind_speed_120m", "wind_speed_180m",
         ],
-        "timezone": "auto",
-        "forecast_days": 7,
+        "timezone": "Asia/Kolkata",
+        "forecast_days": 16,
     }
     try:
         resp = requests.get(OPEN_METEO_URL, params=params, timeout=15)
@@ -76,6 +78,22 @@ def wind_dir_label(degrees):
     return WIND_DIRECTIONS[idx]
 
 
+def wind_label(speed):
+    if speed is None:
+        return ""
+    if speed < 5:
+        return "Calm"
+    if speed < 20:
+        return "Light"
+    if speed < 30:
+        return "Moderate"
+    if speed < 40:
+        return "Strong"
+    if speed < 55:
+        return "Very Strong"
+    return "Gale ⚠️"
+
+
 def format_current_weather(data: dict) -> str:
     if "error" in data:
         return "Sorry, couldn't fetch weather data right now. Try again later."
@@ -92,47 +110,122 @@ def format_current_weather(data: dict) -> str:
     cloud = current.get("cloud_cover", "N/A")
     rain_chance = current.get("precipitation_probability")
     rain_mm = current.get("precipitation", 0)
+    pressure = current.get("pressure_msl")
+
+    wind_10m = current.get("wind_speed_10m", 0)
     gust = current.get("wind_gusts_10m")
     wind_dir = current.get("wind_direction_10m")
-    wind_label = wind_dir_label(wind_dir)
-
-    wind_10m = current.get("wind_speed_10m", "N/A")
+    wind_dir_str = wind_dir_label(wind_dir)
     wind_80m = current.get("wind_speed_80m")
     wind_120m = current.get("wind_speed_120m")
     wind_180m = current.get("wind_speed_180m")
 
     lines = [
         "🌤 *Live Weather at Your Site*",
-        f"Condition: {desc}",
-        f"Temperature: {temp}°C",
+        "",
+        f"☁️  {desc}",
+        f"🌡  {temp}°C" + (f"  (feels {feels}°C)" if feels is not None else ""),
+        f"💧  Humidity: {humidity}%",
+        f"☁️  Cloud Cover: {cloud}%",
     ]
-    if feels is not None:
-        lines.append(f"Feels Like: {feels}°C")
-    lines.append(f"Humidity: {humidity}%")
-    lines.append(f"Cloud Cover: {cloud}%")
     if rain_chance is not None:
-        lines.append(f"Rain Chance: {rain_chance}% "
-                      f"({'⚠️' if rain_chance > 60 else '☂️' if rain_chance > 30 else '🌤'})")
-    if rain_mm is not None and rain_mm > 0:
-        lines.append(f"Rain: {rain_mm} mm")
-    lines.append(f"Pressure: {current.get('pressure_msl', 'N/A')} hPa")
+        icon = "⛈" if rain_chance > 60 else "🌦" if rain_chance > 30 else "🌤"
+        lines.append(f"{icon}  Rain Chance: {rain_chance}%")
+    if rain_mm and rain_mm > 0:
+        lines.append(f"🌧  Rain: {rain_mm} mm")
+    if pressure:
+        lines.append(f"🔽  Pressure: {pressure} hPa")
 
     lines.append("")
-    lines.append("🌬 *Wind*")
-    dir_str = f" ({wind_label})" if wind_label else ""
-    lines.append(f"  Direction: {wind_dir}{dir_str}")
-    lines.append(f"  At 10m:  {wind_10m} km/h")
-    if gust is not None:
-        lines.append(f"  Gusts:    {gust} km/h 💨")
+    lines.append("🌬 *Wind Report*")
+    dir_info = f"({wind_dir_str})" if wind_dir_str else ""
+    lines.append(f"Direction: {wind_dir}° {dir_info}")
+    lines.append(f"Ground: {wind_10m} km/h — {wind_label(wind_10m)}")
+    if gust is not None and gust > 0:
+        lines.append(f"Gusts: {gust} km/h")
     if wind_80m is not None:
-        lines.append(f"  At 80m:  {wind_80m} km/h")
+        lines.append(f"At 80m: {wind_80m} km/h")
     if wind_120m is not None:
-        lines.append(f"  At 120m: {wind_120m} km/h")
+        lines.append(f"At 120m: {wind_120m} km/h")
     if wind_180m is not None:
-        lines.append(f"  At 180m: {wind_180m} km/h")
+        lines.append(f"At 180m: {wind_180m} km/h")
 
     lines.append("")
-    lines.append("⚠️ *Sangreen Renewables* — Stay safe!")
+    lines.append("🛡 *Sangreen Renewables* — Stay safe on site!")
+    return "\n".join(lines)
+
+
+def get_hourly_forecast(lat: float, lon: float, date: str):
+    params = {
+        "latitude": lat,
+        "longitude": lon,
+        "hourly": [
+            "temperature_2m", "precipitation_probability",
+            "precipitation", "weathercode",
+            "wind_speed_10m", "wind_gusts_10m",
+        ],
+        "start_date": date,
+        "end_date": date,
+        "timezone": "Asia/Kolkata",
+    }
+    try:
+        resp = requests.get(OPEN_METEO_URL, params=params, timeout=15)
+        resp.raise_for_status()
+        return resp.json()
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def fmt(val, width):
+    s = str(val) if val is not None else "—"
+    return s.ljust(width)
+
+
+def format_hourly_forecast(data: dict, city_name="", date="") -> str:
+    if "error" in data:
+        return "Sorry, couldn't fetch hourly weather data. Try again later."
+
+    hourly = data.get("hourly", {})
+    if not hourly or not hourly.get("time"):
+        return "No hourly data available for that date."
+
+    times = hourly["time"]
+    temps = hourly.get("temperature_2m", [])
+    rain_chances = hourly.get("precipitation_probability", [])
+    codes = hourly.get("weathercode", [])
+    winds = hourly.get("wind_speed_10m", [])
+
+    # Format date for display
+    date_display = date
+    if date and len(date) == 10:
+        try:
+            d = datetime.strptime(date, "%Y-%m-%d")
+            date_display = d.strftime("%d-%b-%Y")
+        except ValueError:
+            pass
+
+    lines = [f"📅 *Hourly Forecast — {city_name}*"]
+    lines.append(f"📆 {date_display}")
+    lines.append("")
+
+    # Table header
+    lines.append("  Time    Temp   Rain   Wind   Condition")
+    lines.append("  " + "─" * 38)
+
+    for i in range(len(times)):
+        time_str = times[i].split("T")[1][:5]
+        temp = f"{temps[i]:.0f}°C" if i < len(temps) else "—"
+        rain = f"{rain_chances[i]}%" if i < len(rain_chances) and rain_chances[i] > 0 else "—"
+        wind = f"{winds[i]:.0f}" if i < len(winds) and winds[i] > 0 else "—"
+        wcode = codes[i] if i < len(codes) else -1
+        cond = weather_code_desc(wcode).split(" ")[0] if wcode not in (0, 1, 2, 3) else ""
+
+        lines.append(
+            f"  {fmt(time_str, 6)} {fmt(temp, 5)} {fmt(rain, 5)} {fmt(wind, 5)} {cond}"
+        )
+
+    lines.append("")
+    lines.append("🛡 *Sangreen Renewables* — Stay safe on site!")
     return "\n".join(lines)
 
 
@@ -159,7 +252,7 @@ def format_weather_forecast(data: dict) -> str:
         f"Humidity: {humidity}%",
         f"Wind Speed: {wind} km/h",
         "",
-        "📅 *7-Day Forecast*",
+        "📅 *16-Day Forecast*",
     ]
 
     dates = daily.get("time", [])
