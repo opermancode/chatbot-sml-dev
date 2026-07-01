@@ -18,7 +18,8 @@ from services.chatbot import handle_incoming, handle_location, log_chat
 from services.weather_service import get_weather, format_weather_forecast
 from services.twilio_service import send_whatsapp
 
-app = Flask(__name__)
+_basedir = os.path.abspath(os.path.dirname(__file__))
+app = Flask(__name__, instance_path=os.path.join(_basedir, "instance"))
 app.config.from_object(Config)
 db.init_app(app)
 
@@ -147,6 +148,7 @@ def admin_users_add():
     name = request.form.get("name", "").strip()
     phone = request.form.get("phone", "").strip()
     city = request.form.get("city", "").strip()
+    site = request.form.get("site", "").strip()
     group_id = request.form.get("group_id") or None
 
     if not name or not phone:
@@ -159,12 +161,13 @@ def admin_users_add():
 
     phone_clean = phone.replace(" ", "").replace("-", "")
     if not phone_clean.startswith("+"):
-        phone_clean = "+91" + phone_clean  # default India code
+        phone_clean = "+91" + phone_clean
 
     user = User(
         name=name,
         phone=phone_clean,
         city=city,
+        site=site,
         group_id=int(group_id) if group_id else None,
     )
     db.session.add(user)
@@ -179,6 +182,7 @@ def admin_users_edit(user_id):
     user = User.query.get_or_404(user_id)
     user.name = request.form.get("name", user.name).strip()
     user.city = request.form.get("city", user.city).strip()
+    user.site = request.form.get("site", user.site).strip()
     group_id = request.form.get("group_id") or None
     user.group_id = int(group_id) if group_id else None
     user.is_active = request.form.get("is_active") == "on"
@@ -295,16 +299,47 @@ def admin_broadcast():
 @app.route("/admin/chats")
 @admin_required
 def admin_chats():
-    page = request.args.get("page", 1, type=int)
-    phone_filter = request.args.get("phone", "")
-    per_page = 50
+    user_id = request.args.get("user_id", type=int)
+    search = request.args.get("search", "").strip()
 
-    query = ChatLog.query.order_by(ChatLog.created_at.desc())
-    if phone_filter:
-        query = query.filter(ChatLog.phone.contains(phone_filter))
+    query = User.query
+    if search:
+        query = query.filter(
+            db.or_(User.name.ilike(f"%{search}%"), User.phone.ilike(f"%{search}%"))
+        )
 
-    chats = query.paginate(page=page, per_page=per_page, error_out=False)
-    return render_template("admin/chats.html", chats=chats, phone_filter=phone_filter)
+    users = query.order_by(User.name).all()
+
+    chats = []
+    selected_user = None
+    chat_start = None
+    chat_end = None
+    if user_id:
+        selected_user = User.query.get(user_id)
+        if selected_user:
+            chats = ChatLog.query.filter_by(phone=selected_user.phone)\
+                .order_by(ChatLog.created_at.asc()).all()
+            if chats:
+                chat_start = chats[0].created_at
+                chat_end = chats[-1].created_at
+
+    user_last = {}
+    for u in users:
+        last = ChatLog.query.filter_by(phone=u.phone)\
+            .order_by(ChatLog.created_at.desc()).first()
+        user_last[u.id] = last
+
+    return render_template(
+        "admin/chats.html",
+        users=users,
+        chats=chats,
+        selected_user=selected_user,
+        user_last=user_last,
+        search=search,
+        chat_start=chat_start,
+        chat_end=chat_end,
+        enumerate=enumerate,
+    )
 
 
 # ─── Settings ─────────────────────────────────────────────────────────────
@@ -348,7 +383,9 @@ def admin_settings():
 
 @app.route("/webhook/whatsapp", methods=["POST"])
 def webhook_whatsapp():
-    phone = request.form.get("From", "").replace("whatsapp:", "")
+    phone = request.form.get("From", "").replace("whatsapp:", "").strip()
+    if phone and not phone.startswith("+"):
+        phone = "+" + phone
     body = request.form.get("Body", "")
     num_media = int(request.form.get("NumMedia", 0))
 
