@@ -27,6 +27,7 @@ class User(db.Model):
     name = db.Column(db.String(120), nullable=False)
     phone = db.Column(db.String(20), unique=True, nullable=False, index=True)
     city = db.Column(db.String(120), default="")
+    site = db.Column(db.String(120), default="")
     group_id = db.Column(db.Integer, db.ForeignKey("groups.id"), nullable=True)
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
