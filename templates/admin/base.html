@@ -36,7 +36,6 @@
         :root { --forest: #1F7A4D; }
         body { font-family: 'IBM Plex Sans', system-ui, sans-serif; }
 
-        /* Signature: blueprint corner brackets on panels */
         .panel {
             position: relative;
             background: #ffffff;
@@ -166,11 +165,11 @@
     {% if current_user.is_authenticated %}
     <div class="flex min-h-screen">
         <!-- Sidebar -->
-        <aside id="sidebar" class="fixed md:static z-40 w-64 h-screen bg-ink text-white flex flex-col">
+        <aside id="sidebar" class="fixed z-40 w-64 h-screen bg-ink text-white flex flex-col">
 
             <div class="px-5 py-6 border-b border-white/10">
                 <div class="flex items-center gap-2.5">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6FCF97" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v6"/><path d="M12 22c-4-1.5-7-5-7-9.5C5 8 8 4 12 4s7 4 7 8.5c0 4.5-3 8-7 9.5Z"/><path d="M12 12c2-2 5-2 7-1"/><path d="M12 12c-2-2-5-2-7-1"/></svg>
+                    <img src="{{ url_for('static', filename='sangreen.jpeg') }}" alt="Sangreen" class="w-8 h-8 rounded object-cover">
                     <div class="font-display font-bold text-[15px] tracking-tight leading-none">SANGREEN</div>
                 </div>
                 <div class="eyebrow mt-2 text-[#7C927F]" style="--forest:#6FCF97"><span style="background:#6FCF97;width:6px;height:6px;display:inline-block"></span>Ops Console</div>
@@ -215,7 +214,7 @@
         <div id="overlay" class="fixed inset-0 bg-black/40 z-30 hidden md:hidden"></div>
 
         <!-- Main -->
-        <div class="flex-1 min-w-0">
+        <div class="flex-1 min-w-0 md:ml-64">
             <header class="sticky top-0 z-20 bg-paper/90 backdrop-blur border-b border-line">
                 <div class="flex items-center gap-3 px-5 py-4 max-w-6xl mx-auto">
                     <button id="menuBtn" class="md:hidden p-1.5 rounded border border-line" aria-label="Open menu">
