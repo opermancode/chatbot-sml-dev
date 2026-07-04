@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sangreen Weather Bot — WhatsApp Weather Intelligence for Solar & Wind Sites</title>
+    <meta name="description" content="Get real-time weather updates and 16-day forecasts for your renewable energy sites directly on WhatsApp. Built for Sangreen Future Renewables field teams.">
+    <link rel="icon" type="image/jpeg" href="{{ url_for('static', filename='sangreen.jpg') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        ink: '#12241A',
+                        forest: '#1F7A4D',
+                        forestdark: '#155C3B',
+                        solar: '#E8A33D',
+                        solardark: '#C67F1F',
+                        paper: '#F6F8F3',
+                        paper2: '#EDF1E9',
+                        line: '#DEE6D9',
+                        slate: '#5B6B62',
+                        danger: '#C0392B',
+                    },
+                    fontFamily: {
+                        display: ['Archivo', 'sans-serif'],
+                        mono: ['"IBM Plex Mono"', 'monospace'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        :root { --forest: #1F7A4D; }
+        body { font-family: 'IBM Plex Sans', system-ui, sans-serif; }
+
+        .eyebrow {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.6875rem;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: #5B6B62;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .eyebrow::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            background: var(--forest);
+        }
+        .eyebrow-white::before { background: #6FCF97; }
+        .eyebrow-white { color: #9FB3A5; }
+
+        .phone-mockup {
+            background: #1a1a1a;
+            border-radius: 36px;
+            padding: 12px;
+            box-shadow: 0 25px 80px -20px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.1);
+            max-width: 320px;
+            margin: 0 auto;
+        }
+        .phone-screen {
+            background: #0B141A;
+            border-radius: 28px;
+            overflow: hidden;
+            position: relative;
+        }
+        .phone-notch {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 24px;
+            background: #1a1a1a;
+            border-bottom-left-radius: 16px;
+            border-bottom-right-radius: 16px;
+            z-index: 10;
+        }
+        .chat-bubble {
+            border-radius: 8px 8px 8px 2px;
+            padding: 10px 14px;
+            font-size: 0.82rem;
+            line-height: 1.5;
+            max-width: 90%;
+        }
+        .chat-bubble-bot {
+            background: #005C4B;
+            color: white;
+            border-radius: 8px 8px 2px 8px;
+            margin-left: auto;
+        }
+        .chat-bubble-user {
+            background: #202C33;
+            color: #E9EDEF;
+        }
+        .chat-time {
+            font-size: 0.65rem;
+            color: #8696A0;
+            text-align: right;
+            margin-top: 2px;
+        }
+
+        .feature-card {
+            background: #ffffff;
+            border: 1px solid #DEE6D9;
+            border-radius: 3px;
+            position: relative;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .feature-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px -10px rgba(18,36,26,0.12);
+        }
+        .feature-card::before, .feature-card::after {
+            content: '';
+            position: absolute;
+            width: 11px;
+            height: 11px;
+            border-color: var(--forest);
+            border-style: solid;
+            opacity: 0.4;
+            pointer-events: none;
+        }
+        .feature-card::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+        .feature-card::after { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+
+        .step-number {
+            width: 36px;
+            height: 36px;
+            background: #1F7A4D;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Archivo', sans-serif;
+            font-weight: 700;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #1F7A4D 0%, #E8A33D 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .wave-divider {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            overflow: hidden;
+            line-height: 0;
+        }
+        .wave-divider svg {
+            position: relative;
+            display: block;
+            width: calc(100% + 1.3px);
+            height: 60px;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        .animate-float { animation: float 4s ease-in-out infinite; }
+
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            100% { transform: scale(1.3); opacity: 0; }
+        }
+        .pulse-ring {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 2px solid #1F7A4D;
+            animation: pulse-ring 2s ease-out infinite;
+        }
+    </style>
+<base target="_blank">
+</head>
+<body class="bg-paper text-ink">
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-paper/90 backdrop-blur border-b border-line">
+        <div class="max-w-6xl mx-auto px-5 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+                <img src="{{ url_for('static', filename='sangreen.jpg') }}" alt="Sangreen" class="w-8 h-8 rounded object-cover">
+                <span class="font-display font-bold text-lg tracking-tight">SANGREEN</span>
+            </div>
+            <div class="hidden md:flex items-center gap-6">
+                <a href="#why" class="text-sm font-medium text-slate hover:text-forest transition-colors">Why Weather Bot</a>
+                <a href="#how" class="text-sm font-medium text-slate hover:text-forest transition-colors">How It Works</a>
+                <a href="#features" class="text-sm font-medium text-slate hover:text-forest transition-colors">Features</a>
+                <a href="/admin/login" class="btn-landing text-sm font-medium text-forest border border-forest px-4 py-2 rounded hover:bg-forest hover:text-white transition-all">Admin Login</a>
+            </div>
+            <button id="mobileMenuBtn" class="md:hidden p-2">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+            </button>
+        </div>
+        <!-- Mobile menu -->
+        <div id="mobileMenu" class="hidden md:hidden border-t border-line bg-paper px-5 py-4 space-y-3">
+            <a href="#why" class="block text-sm text-slate">Why Weather Bot</a>
+            <a href="#how" class="block text-sm text-slate">How It Works</a>
+            <a href="#features" class="block text-sm text-slate">Features</a>
+            <a href="/admin/login" class="block text-sm text-forest font-medium">Admin Login →</a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="relative pt-24 pb-16 md:pt-32 md:pb-24 overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-br from-forest/5 via-transparent to-solar/5 pointer-events-none"></div>
+        <div class="max-w-6xl mx-auto px-5">
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div class="relative z-10">
+                    <div class="eyebrow mb-4">
+                        <span style="background:#1F7A4D;width:6px;height:6px;display:inline-block"></span>
+                        Sangreen Future Renewables
+                    </div>
+                    <h1 class="font-display font-extrabold text-4xl md:text-5xl lg:text-6xl leading-tight mb-6">
+                        Weather Intelligence<br>
+                        <span class="gradient-text">On WhatsApp</span>
+                    </h1>
+                    <p class="text-slate text-lg md:text-xl leading-relaxed mb-8 max-w-lg">
+                        Real-time weather updates and 16-day forecasts delivered instantly to your field teams. 
+                        No apps to install. No passwords to remember. Just message and know.
+                    </p>
+                    <div class="flex flex-wrap gap-4">
+                        <a href="#how" class="inline-flex items-center gap-2 bg-forest text-white px-6 py-3 rounded font-medium hover:bg-forestdark transition-colors">
+                            See How It Works
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                        </a>
+                        <a href="/admin" class="inline-flex items-center gap-2 border border-line bg-white px-6 py-3 rounded font-medium text-ink hover:bg-paper2 transition-colors">
+                            Operator Console
+                        </a>
+                    </div>
+                    <div class="mt-8 flex items-center gap-4 text-sm text-slate">
+                        <div class="flex -space-x-2">
+                            <div class="w-8 h-8 rounded-full bg-forest/20 border-2 border-paper flex items-center justify-center text-xs font-bold text-forest">P</div>
+                            <div class="w-8 h-8 rounded-full bg-solar/20 border-2 border-paper flex items-center justify-center text-xs font-bold text-solardark">M</div>
+                            <div class="w-8 h-8 rounded-full bg-forest/20 border-2 border-paper flex items-center justify-center text-xs font-bold text-forest">D</div>
+                        </div>
+                        <span>Trusted by field engineers across <strong class="text-ink">4 solar sites</strong></span>
+                    </div>
+                </div>
+
+                <!-- Phone Mockup -->
+                <div class="relative flex justify-center">
+                    <div class="absolute -top-10 -right-10 w-64 h-64 bg-forest/10 rounded-full blur-3xl pointer-events-none"></div>
+                    <div class="phone-mockup animate-float">
+                        <div class="phone-screen">
+                            <div class="phone-notch"></div>
+                            <!-- WhatsApp Header -->
+                            <div class="bg-[#1F2C34] px-4 pt-8 pb-3 flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full bg-forest flex items-center justify-center">
+                                    <img src="{{ url_for('static', filename='sangreen.jpg') }}" class="w-full h-full rounded-full object-cover">
+                                </div>
+                                <div>
+                                    <div class="text-white text-sm font-medium">Sangreen Weather Bot</div>
+                                    <div class="text-[#8696A0] text-xs">online</div>
+                                </div>
+                            </div>
+                            <!-- Chat -->
+                            <div class="p-3 space-y-3 bg-[#0B141A]" style="min-height: 380px;">
+                                <div class="text-center text-[#8696A0] text-xs py-2">Today</div>
+
+                                <div class="chat-bubble chat-bubble-user">
+                                    <div>hi</div>
+                                    <div class="chat-time">09:14</div>
+                                </div>
+
+                                <div class="chat-bubble chat-bubble-bot">
+                                    <div>👋 <strong>Hello Omkar!</strong><br>📍 Site: Pune Solar Plant<br>🏙 City: Pune<br><br>🌤 <strong>Sangreen Renewables Weather Bot</strong><br><br>Choose an option:<br>1️⃣ <strong>Current Weather</strong><br>2️⃣ <strong>Forecast for a Date</strong></div>
+                                    <div class="chat-time">09:14 ✓✓</div>
+                                </div>
+
+                                <div class="chat-bubble chat-bubble-user">
+                                    <div>1</div>
+                                    <div class="chat-time">09:15</div>
+                                </div>
+
+                                <div class="chat-bubble chat-bubble-bot">
+                                    <div>📍 <strong>Get Current Weather</strong><br><br>How would you like to share your location?<br><br>1️⃣ <strong>Share Live Location</strong><br>2️⃣ <strong>Enter City Name</strong></div>
+                                    <div class="chat-time">09:15 ✓✓</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Why Section -->
+    <section id="why" class="py-16 md:py-24 bg-white relative">
+        <div class="max-w-6xl mx-auto px-5">
+            <div class="text-center max-w-2xl mx-auto mb-16">
+                <div class="eyebrow justify-center mb-4">
+                    <span style="background:#1F7A4D;width:6px;height:6px;display:inline-block"></span>
+                    Why We Built This
+                </div>
+                <h2 class="font-display font-bold text-3xl md:text-4xl mb-4">Weather Decisions<br>Can't Wait for a Dashboard</h2>
+                <p class="text-slate text-lg">Field engineers and site operators at Sangreen's renewable plants need instant weather intelligence — not another app to check. WhatsApp is already in their pocket.</p>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="feature-card p-6">
+                    <div class="w-12 h-12 rounded-lg bg-forest/10 flex items-center justify-center mb-4">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1F7A4D" stroke-width="1.5"><path d="M12 2v4"/><path d="M12 22c-4-1.5-7-5-7-9.5C5 8 8 4 12 4s7 4 7 8.5c0 4.5-3 8-7 9.5Z"/><path d="M12 12c2-2 5-2 7-1"/><path d="M12 12c-2-2-5-2-7-1"/></svg>
+                    </div>
+                    <h3 class="font-display font-bold text-lg mb-2">Site Safety First</h3>
+                    <p class="text-slate text-sm leading-relaxed">High winds, thunderstorms, and extreme temperatures threaten both personnel and equipment. Get alerts before conditions turn dangerous.</p>
+                </div>
+
+                <div class="feature-card p-6">
+                    <div class="w-12 h-12 rounded-lg bg-solar/15 flex items-center justify-center mb-4">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C67F1F" stroke-width="1.5"><circle cx="12" cy="12" r="5"/><path d="M12 1v2"/><path d="M12 21v2"/><path d="M4.22 4.22l1.42 1.42"/><path d="M18.36 18.36l1.42 1.42"/><path d="M1 12h2"/><path d="M21 12h2"/><path d="M4.22 19.78l1.42-1.42"/><path d="M18.36 5.64l1.42-1.42"/></svg>
+                    </div>
+                    <h3 class="font-display font-bold text-lg mb-2">Solar Output Planning</h3>
+                    <p class="text-slate text-sm leading-relaxed">Cloud cover and precipitation directly impact solar generation. 16-day hourly forecasts help operators plan maintenance and grid scheduling.</p>
+                </div>
+
+                <div class="feature-card p-6">
+                    <div class="w-12 h-12 rounded-lg bg-forest/10 flex items-center justify-center mb-4">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1F7A4D" stroke-width="1.5"><path d="M17.5 19c0-3.5-3-6.5-7-6.5s-7 3-7 6.5"/><circle cx="10.5" cy="8.5" r="3.5"/><path d="M21 12h-4"/><path d="M19 10v4"/></svg>
+                    </div>
+                    <h3 class="font-display font-bold text-lg mb-2">Zero App Friction</h3>
+                    <p class="text-slate text-sm leading-relaxed">Your team already uses WhatsApp. No downloads, no training, no forgotten passwords. Just save the number and message "hi".</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section id="how" class="py-16 md:py-24 bg-paper relative">
+        <div class="max-w-6xl mx-auto px-5">
+            <div class="grid md:grid-cols-2 gap-16 items-center">
+                <div>
+                    <div class="eyebrow mb-4">
+                        <span style="background:#1F7A4D;width:6px;height:6px;display:inline-block"></span>
+                        How It Works
+                    </div>
+                    <h2 class="font-display font-bold text-3xl md:text-4xl mb-6">Three Taps to<br>Weather Intelligence</h2>
+                    <p class="text-slate mb-8">Built for operators who need answers fast. No complex interfaces — just natural conversation on WhatsApp.</p>
+
+                    <div class="space-y-6">
+                        <div class="flex gap-4">
+                            <div class="step-number">1</div>
+                            <div>
+                                <h4 class="font-display font-bold text-ink mb-1">Message "hi" to the bot</h4>
+                                <p class="text-slate text-sm">The bot greets you by name, confirms your site, and presents the weather menu instantly.</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="step-number">2</div>
+                            <div>
+                                <h4 class="font-display font-bold text-ink mb-1">Choose Current or Forecast</h4>
+                                <p class="text-slate text-sm">Reply <strong>1</strong> for live weather at your location, or <strong>2</strong> for a specific date up to 16 days ahead.</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="step-number">3</div>
+                            <div>
+                                <h4 class="font-display font-bold text-ink mb-1">Share Location or Type City</h4>
+                                <p class="text-slate text-sm">Send your live location via WhatsApp's pin button, or type any city name. Get detailed wind, temperature, and precipitation data in seconds.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="relative">
+                    <div class="absolute -top-20 -right-20 w-72 h-72 bg-solar/10 rounded-full blur-3xl pointer-events-none"></div>
+                    <div class="grid gap-4">
+                        <div class="feature-card p-5 flex items-start gap-4">
+                            <div class="w-10 h-10 rounded-full bg-forest/10 flex items-center justify-center flex-shrink-0">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1F7A4D" stroke-width="2"><path d="M12 2v6"/><path d="M12 22c-4-1.5-7-5-7-9.5C5 8 8 4 12 4s7 4 7 8.5c0 4.5-3 8-7 9.5Z"/></svg>
+                            </div>
+                            <div>
+                                <h4 class="font-display font-bold mb-1">Live Weather Report</h4>
+                                <p class="text-slate text-sm">Temperature, humidity, cloud cover, pressure, and multi-level wind speeds (10m, 80m, 120m, 180m) — critical for turbine and panel assessments.</p>
+                            </div>
+                        </div>
+                        <div class="feature-card p-5 flex items-start gap-4">
+                            <div class="w-10 h-10 rounded-full bg-solar/15 flex items-center justify-center flex-shrink-0">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C67F1F" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg>
+                            </div>
+                            <div>
+                                <h4 class="font-display font-bold mb-1">16-Day Hourly Forecast</h4>
+                                <p class="text-slate text-sm">Plan maintenance windows with precision. Hourly breakdowns show temperature, rain probability, wind speed, and conditions for any date you choose.</p>
+                            </div>
+                        </div>
+                        <div class="feature-card p-5 flex items-start gap-4">
+                            <div class="w-10 h-10 rounded-full bg-forest/10 flex items-center justify-center flex-shrink-0">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1F7A4D" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                            </div>
+                            <div>
+                                <h4 class="font-display font-bold mb-1">Broadcast to Teams</h4>
+                                <p class="text-slate text-sm">Operators can send urgent weather alerts to all site engineers or specific groups instantly from the admin console.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- For Engineers Section -->
+    <section class="py-16 md:py-24 bg-ink text-white relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-96 h-96 bg-forest/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute bottom-0 left-0 w-72 h-72 bg-solar/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div class="max-w-6xl mx-auto px-5 relative z-10">
+            <div class="text-center max-w-2xl mx-auto mb-16">
+                <div class="eyebrow eyebrow-white justify-center mb-4">
+                    <span style="background:#6FCF97;width:6px;height:6px;display:inline-block"></span>
+                    Built for Field Teams
+                </div>
+                <h2 class="font-display font-bold text-3xl md:text-4xl mb-4">How Engineers Use<br>the Weather Bot</h2>
+                <p class="text-[#9FB3A5] text-lg">From daily safety checks to critical maintenance decisions, the bot delivers exactly what engineers need, when they need it.</p>
+            </div>
+
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="bg-white/5 border border-white/10 rounded p-6 hover:bg-white/10 transition-colors">
+                    <div class="text-3xl mb-3">🌅</div>
+                    <h4 class="font-display font-bold mb-2">Morning Briefing</h4>
+                    <p class="text-[#9FB3A5] text-sm">Engineers message "hi" at shift start to get current conditions before heading to the field.</p>
+                </div>
+                <div class="bg-white/5 border border-white/10 rounded p-6 hover:bg-white/10 transition-colors">
+                    <div class="text-3xl mb-3">🔧</div>
+                    <h4 class="font-display font-bold mb-2">Maintenance Windows</h4>
+                    <p class="text-[#9FB3A5] text-sm">Check 16-day forecasts to schedule panel cleaning or turbine servicing during calm weather.</p>
+                </div>
+                <div class="bg-white/5 border border-white/10 rounded p-6 hover:bg-white/10 transition-colors">
+                    <div class="text-3xl mb-3">⚡</div>
+                    <h4 class="font-display font-bold mb-2">Output Forecasting</h4>
+                    <p class="text-[#9FB3A5] text-sm">Cloud cover and precipitation data helps predict solar generation dips and plan grid submissions.</p>
+                </div>
+                <div class="bg-white/5 border border-white/10 rounded p-6 hover:bg-white/10 transition-colors">
+                    <div class="text-3xl mb-3">🛡️</div>
+                    <h4 class="font-display font-bold mb-2">Safety Alerts</h4>
+                    <p class="text-[#9FB3A5] text-sm">High wind or thunderstorm warnings let teams evacuate elevated areas and secure loose equipment.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Grid -->
+    <section id="features" class="py-16 md:py-24 bg-white">
+        <div class="max-w-6xl mx-auto px-5">
+            <div class="text-center max-w-2xl mx-auto mb-16">
+                <div class="eyebrow justify-center mb-4">
+                    <span style="background:#1F7A4D;width:6px;height:6px;display:inline-block"></span>
+                    Technical Capabilities
+                </div>
+                <h2 class="font-display font-bold text-3xl md:text-4xl mb-4">Everything Under<br>the Hood</h2>
+                <p class="text-slate text-lg">Powered by Open-Meteo weather data and Twilio WhatsApp API. Built for reliability at remote renewable sites.</p>
+            </div>
+
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                <div class="p-5 border border-line rounded hover:border-forest/30 transition-colors">
+                    <div class="font-mono text-xs text-forest mb-2">01</div>
+                    <h4 class="font-display font-bold mb-2">Multi-Level Wind Data</h4>
+                    <p class="text-slate text-sm">Wind speeds at 10m, 80m, 120m, and 180m heights — essential for wind farm turbine assessments and crane operations.</p>
+                </div>
+                <div class="p-5 border border-line rounded hover:border-forest/30 transition-colors">
+                    <div class="font-mono text-xs text-forest mb-2">02</div>
+                    <h4 class="font-display font-bold mb-2">IST Timezone Native</h4>
+                    <p class="text-slate text-sm">All forecasts are delivered in Asia/Kolkata time. No mental math for shift planners working across Indian sites.</p>
+                </div>
+                <div class="p-5 border border-line rounded hover:border-forest/30 transition-colors">
+                    <div class="font-mono text-xs text-forest mb-2">03</div>
+                    <h4 class="font-display font-bold mb-2">Geocoded City Search</h4>
+                    <p class="text-slate text-sm">Type any city name worldwide. The bot resolves it to precise coordinates and fetches local weather instantly.</p>
+                </div>
+                <div class="p-5 border border-line rounded hover:border-forest/30 transition-colors">
+                    <div class="font-mono text-xs text-forest mb-2">04</div>
+                    <h4 class="font-display font-bold mb-2">Live Location Sharing</h4>
+                    <p class="text-slate text-sm">Drop a WhatsApp location pin from anywhere on site. Get hyperlocal weather for that exact GPS coordinate.</p>
+                </div>
+                <div class="p-5 border border-line rounded hover:border-forest/30 transition-colors">
+                    <div class="font-mono text-xs text-forest mb-2">05</div>
+                    <h4 class="font-display font-bold mb-2">Group Broadcasts</h4>
+                    <p class="text-slate text-sm">Operators send targeted alerts to specific site groups or all users. Perfect for emergency weather warnings.</p>
+                </div>
+                <div class="p-5 border border-line rounded hover:border-forest/30 transition-colors">
+                    <div class="font-mono text-xs text-forest mb-2">06</div>
+                    <h4 class="font-display font-bold mb-2">Full Chat History</h4>
+                    <p class="text-slate text-sm">Admin panel stores every conversation. Review what weather data was shared, when, and with whom for compliance.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Admin Console Preview -->
+    <section class="py-16 md:py-24 bg-paper">
+        <div class="max-w-6xl mx-auto px-5">
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div class="order-2 md:order-1">
+                    <div class="feature-card p-2">
+                        <div class="bg-white rounded p-4 space-y-4">
+                            <div class="flex items-center justify-between pb-3 border-b border-line">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-3 h-3 rounded-full bg-red-400"></div>
+                                    <div class="w-3 h-3 rounded-full bg-yellow-400"></div>
+                                    <div class="w-3 h-3 rounded-full bg-green-400"></div>
+                                </div>
+                                <div class="text-xs text-slate font-mono">sangreen-admin.local</div>
+                            </div>
+                            <div class="grid grid-cols-4 gap-3">
+                                <div class="bg-forest/5 p-3 rounded text-center">
+                                    <div class="text-2xl font-display font-bold text-forest">24</div>
+                                    <div class="text-xs text-slate">Users</div>
+                                </div>
+                                <div class="bg-forest/5 p-3 rounded text-center">
+                                    <div class="text-2xl font-display font-bold text-forest">1,247</div>
+                                    <div class="text-xs text-slate">Chats</div>
+                                </div>
+                                <div class="bg-solar/10 p-3 rounded text-center">
+                                    <div class="text-2xl font-display font-bold text-solardark">18</div>
+                                    <div class="text-xs text-slate">Today</div>
+                                </div>
+                                <div class="bg-forest/5 p-3 rounded text-center">
+                                    <div class="text-2xl font-display font-bold text-forest">4</div>
+                                    <div class="text-xs text-slate">Groups</div>
+                                </div>
+                            </div>
+                            <div class="border border-line rounded p-3">
+                                <div class="text-xs font-mono text-slate mb-2">Recent Activity</div>
+                                <div class="space-y-2">
+                                    <div class="flex justify-between text-sm">
+                                        <span class="font-mono text-xs text-slate">+919146322662</span>
+                                        <span class="text-xs text-slate">2 min ago</span>
+                                    </div>
+                                    <div class="flex justify-between text-sm">
+                                        <span class="font-mono text-xs text-slate">+919876543210</span>
+                                        <span class="text-xs text-slate">15 min ago</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="order-1 md:order-2">
+                    <div class="eyebrow mb-4">
+                        <span style="background:#1F7A4D;width:6px;height:6px;display:inline-block"></span>
+                        Operator Console
+                    </div>
+                    <h2 class="font-display font-bold text-3xl md:text-4xl mb-4">Manage Every Site<br>From One Place</h2>
+                    <p class="text-slate mb-6">The admin panel gives your operations team full control — add field engineers, organize them by site groups, broadcast emergency alerts, and review complete chat histories.</p>
+                    <ul class="space-y-3">
+                        <li class="flex items-start gap-3">
+                            <svg class="flex-shrink-0 mt-0.5" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1F7A4D" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+                            <span class="text-sm text-slate">Add users with phone, city, and site assignment</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <svg class="flex-shrink-0 mt-0.5" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1F7A4D" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+                            <span class="text-sm text-slate">Create groups for Pune Solar, Mumbai Wind, etc.</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <svg class="flex-shrink-0 mt-0.5" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1F7A4D" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+                            <span class="text-sm text-slate">Send broadcast messages to specific groups</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <svg class="flex-shrink-0 mt-0.5" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1F7A4D" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+                            <span class="text-sm text-slate">View full conversation history per engineer</span>
+                        </li>
+                    </ul>
+                    <div class="mt-8">
+                        <a href="/admin/login" class="inline-flex items-center gap-2 bg-forest text-white px-5 py-2.5 rounded font-medium hover:bg-forestdark transition-colors text-sm">
+                            Open Admin Console
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-16 md:py-24 bg-ink text-white relative overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-br from-forest/20 via-transparent to-solar/10 pointer-events-none"></div>
+        <div class="max-w-4xl mx-auto px-5 text-center relative z-10">
+            <div class="eyebrow eyebrow-white justify-center mb-4">
+                <span style="background:#6FCF97;width:6px;height:6px;display:inline-block"></span>
+                Get Started
+            </div>
+            <h2 class="font-display font-bold text-3xl md:text-5xl mb-6">Ready to Weather-Proof<br>Your Operations?</h2>
+            <p class="text-[#9FB3A5] text-lg mb-8 max-w-xl mx-auto">The Sangreen Weather Bot is live and serving field teams across all renewable sites. Contact your site operator to get added to the system.</p>
+            <div class="flex flex-wrap justify-center gap-4">
+                <div class="bg-white/10 border border-white/20 rounded-lg px-6 py-4 text-left">
+                    <div class="text-xs text-[#9FB3A5] mb-1">Save this number</div>
+                    <div class="font-mono text-lg font-semibold">+1 (415) 523-8886</div>
+                    <div class="text-xs text-[#9FB3A5] mt-1">Twilio Sandbox</div>
+                </div>
+                <div class="bg-white/10 border border-white/20 rounded-lg px-6 py-4 text-left">
+                    <div class="text-xs text-[#9FB3A5] mb-1">Send any time</div>
+                    <div class="font-mono text-lg font-semibold">"hi"</div>
+                    <div class="text-xs text-[#9FB3A5] mt-1">To get started</div>
+                </div>
+            </div>
+            <p class="text-[#5B6B62] text-sm mt-6">Already registered? Just message the bot. New users must be added by an admin first.</p>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-paper border-t border-line py-8">
+        <div class="max-w-6xl mx-auto px-5 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-2.5">
+                <img src="{{ url_for('static', filename='sangreen.jpg') }}" alt="Sangreen" class="w-6 h-6 rounded object-cover">
+                <span class="font-display font-bold text-sm tracking-tight">SANGREEN FUTURE RENEWABLES</span>
+            </div>
+            <div class="text-slate text-sm">
+                Weather Bot &mdash; Built for field operations
+            </div>
+            <div class="flex items-center gap-4">
+                <a href="/admin/login" class="text-sm text-forest hover:text-forestdark font-medium">Admin Login</a>
+                <span class="text-line">|</span>
+                <a href="/admin" class="text-sm text-slate hover:text-forest">Dashboard</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Mobile menu toggle
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const mobileMenu = document.getElementById('mobileMenu');
+        if (mobileMenuBtn && mobileMenu) {
+            mobileMenuBtn.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+        }
+
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    mobileMenu?.classList.add('hidden');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
