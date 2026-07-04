@@ -167,6 +167,7 @@
     <div class="flex min-h-screen">
         <!-- Sidebar -->
         <aside id="sidebar" class="fixed md:static z-40 w-64 h-screen bg-ink text-white flex flex-col">
+
             <div class="px-5 py-6 border-b border-white/10">
                 <div class="flex items-center gap-2.5">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6FCF97" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v6"/><path d="M12 22c-4-1.5-7-5-7-9.5C5 8 8 4 12 4s7 4 7 8.5c0 4.5-3 8-7 9.5Z"/><path d="M12 12c2-2 5-2 7-1"/><path d="M12 12c-2-2-5-2-7-1"/></svg>
@@ -225,6 +226,9 @@
             </header>
 
             <main class="max-w-6xl mx-auto px-5 py-6">
+    {% else %}
+    <main class="min-h-screen">
+    {% endif %}
                 {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
                 {% for category, message in messages %}
@@ -241,6 +245,7 @@
                 {% endwith %}
 
                 {% block content %}{% endblock %}
+    {% if current_user.is_authenticated %}
             </main>
         </div>
     </div>
@@ -255,19 +260,6 @@
         if (overlay) overlay.addEventListener('click', closeMenu);
     </script>
     {% else %}
-    <main class="min-h-screen">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-        <div class="max-w-md mx-auto mt-6 px-4">
-        {% for category, message in messages %}
-        <div class="mb-4 px-4 py-3 rounded text-sm {% if category == 'error' %}bg-red-50 text-danger border border-red-200{% else %}bg-forest/10 text-forestdark border border-forest/20{% endif %}">
-            {{ message }}
-        </div>
-        {% endfor %}
-        </div>
-        {% endif %}
-        {% endwith %}
-        {% block content %}{% endblock %}
     </main>
     {% endif %}
 </body>
