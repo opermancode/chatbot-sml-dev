@@ -2,17 +2,21 @@
 {% block title %}Users{% endblock %}
 {% block content %}
 <div class="flex justify-between items-center mb-6">
-    <h1 class="text-2xl font-bold">👥 Users</h1>
-    <button onclick="modal.classList.remove('hidden')"
-        class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
-        + Add User
+    <div>
+        <div class="eyebrow mb-1">Directory</div>
+        <h2 class="font-display font-bold text-xl text-ink">All Users</h2>
+    </div>
+    <button onclick="modal.classList.remove('hidden')" class="btn btn-primary">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        Add User
     </button>
 </div>
 
-<div class="bg-white rounded-lg shadow-md overflow-hidden">
-    <table class="w-full text-sm">
+<div class="panel overflow-hidden">
+    <div class="overflow-x-auto">
+    <table class="w-full text-sm table-clean">
         <thead>
-            <tr class="bg-gray-50">
+            <tr>
                 <th class="text-left p-3">Name</th>
                 <th class="text-left p-3">Phone</th>
                 <th class="text-left p-3">City</th>
@@ -25,65 +29,68 @@
         </thead>
         <tbody>
             {% for user in users %}
-            <tr class="border-t hover:bg-gray-50">
-                <td class="p-3 font-medium">{{ user.name }}</td>
-                <td class="p-3 font-mono">{{ user.phone }}</td>
+            <tr>
+                <td class="p-3">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-7 h-7 rounded-full bg-forest/10 text-forestdark flex items-center justify-center text-xs font-semibold flex-shrink-0">
+                            {{ user.name[:1]|upper }}
+                        </div>
+                        <span class="font-medium">{{ user.name }}</span>
+                    </div>
+                </td>
+                <td class="p-3 font-mono text-xs">{{ user.phone }}</td>
                 <td class="p-3">{{ user.city }}</td>
                 <td class="p-3">{{ user.site }}</td>
                 <td class="p-3">{{ user.group.name if user.group else '-' }}</td>
                 <td class="p-3">
                     {% if user.is_active %}
-                    <span class="px-2 py-1 bg-green-100 text-green-700 rounded text-xs">Active</span>
+                    <span class="badge bg-forest/10 text-forestdark">Active</span>
                     {% else %}
-                    <span class="px-2 py-1 bg-red-100 text-red-700 rounded text-xs">Inactive</span>
+                    <span class="badge bg-red-50 text-danger">Inactive</span>
                     {% endif %}
                 </td>
-                <td class="p-3 text-gray-500 text-xs">{{ user.created_at.strftime('%d/%m/%Y') }}</td>
-                <td class="p-3">
+                <td class="p-3 text-slate text-xs font-mono">{{ user.created_at.strftime('%d/%m/%Y') }}</td>
+                <td class="p-3 whitespace-nowrap">
                     <button onclick="editUser({{ user.id }}, '{{ user.name }}', '{{ user.phone }}', '{{ user.city }}', '{{ user.site }}', '{{ user.group_id or '' }}', {{ 'true' if user.is_active else 'false' }})"
-                        class="text-blue-600 hover:underline mr-2">Edit</button>
+                        class="btn-text mr-3">Edit</button>
                     <form action="{{ url_for('admin_users_delete', user_id=user.id) }}" method="POST" class="inline"
                         onsubmit="return confirm('Delete this user?')">
-                        <button type="submit" class="text-red-600 hover:underline">Delete</button>
+                        <button type="submit" class="btn-text-danger">Delete</button>
                     </form>
                 </td>
             </tr>
             {% else %}
-            <tr><td colspan="8" class="p-4 text-center text-gray-500">No users yet</td></tr>
+            <tr><td colspan="8" class="p-10 text-center text-slate text-sm">No users yet</td></tr>
             {% endfor %}
         </tbody>
     </table>
+    </div>
 </div>
 
 <!-- Add Modal -->
-<div id="modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50">
-    <div class="bg-white rounded-lg p-6 w-full max-w-md">
-        <h2 class="text-xl font-bold mb-4">Add User</h2>
+<div id="modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-lg p-6 w-full max-w-md panel">
+        <h2 class="font-display font-bold text-lg text-ink mb-4">Add User</h2>
         <form action="{{ url_for('admin_users_add') }}" method="POST">
             <div class="mb-3">
-                <label class="block text-gray-700 mb-1">Name *</label>
-                <input type="text" name="name" required
-                    class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                <label class="field-label">Name *</label>
+                <input type="text" name="name" required class="field-input">
             </div>
             <div class="mb-3">
-                <label class="block text-gray-700 mb-1">Phone *</label>
-                <input type="text" name="phone" required placeholder="+919876543210"
-                    class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                <label class="field-label">Phone *</label>
+                <input type="text" name="phone" required placeholder="+919876543210" class="field-input">
             </div>
             <div class="mb-3">
-                <label class="block text-gray-700 mb-1">City</label>
-                <input type="text" name="city"
-                    class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                <label class="field-label">City</label>
+                <input type="text" name="city" class="field-input">
             </div>
             <div class="mb-3">
-                <label class="block text-gray-700 mb-1">Site</label>
-                <input type="text" name="site" placeholder="e.g. Pune Solar Plant"
-                    class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                <label class="field-label">Site</label>
+                <input type="text" name="site" placeholder="e.g. Pune Solar Plant" class="field-input">
             </div>
-            <div class="mb-4">
-                <label class="block text-gray-700 mb-1">Group</label>
-                <select name="group_id"
-                    class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+            <div class="mb-5">
+                <label class="field-label">Group</label>
+                <select name="group_id" class="field-input">
                     <option value="">No Group</option>
                     {% for g in groups %}
                     <option value="{{ g.id }}">{{ g.name }}</option>
@@ -91,57 +98,48 @@
                 </select>
             </div>
             <div class="flex justify-end space-x-3">
-                <button type="button" onclick="modal.classList.add('hidden')"
-                    class="px-4 py-2 border rounded-lg hover:bg-gray-50">Cancel</button>
-                <button type="submit"
-                    class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Add</button>
+                <button type="button" onclick="modal.classList.add('hidden')" class="btn btn-ghost">Cancel</button>
+                <button type="submit" class="btn btn-primary">Add</button>
             </div>
         </form>
     </div>
 </div>
 
 <!-- Edit Modal -->
-<div id="editModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50">
-    <div class="bg-white rounded-lg p-6 w-full max-w-md">
-        <h2 class="text-xl font-bold mb-4">Edit User</h2>
+<div id="editModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-lg p-6 w-full max-w-md panel">
+        <h2 class="font-display font-bold text-lg text-ink mb-4">Edit User</h2>
         <form id="editForm" method="POST">
             <div class="mb-3">
-                <label class="block text-gray-700 mb-1">Name</label>
-                <input type="text" name="name" id="edit_name" required
-                    class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                <label class="field-label">Name</label>
+                <input type="text" name="name" id="edit_name" required class="field-input">
             </div>
             <div class="mb-3">
-                <label class="block text-gray-700 mb-1">City</label>
-                <input type="text" name="city" id="edit_city"
-                    class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                <label class="field-label">City</label>
+                <input type="text" name="city" id="edit_city" class="field-input">
             </div>
             <div class="mb-3">
-                <label class="block text-gray-700 mb-1">Site</label>
-                <input type="text" name="site" id="edit_site"
-                    class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                <label class="field-label">Site</label>
+                <input type="text" name="site" id="edit_site" class="field-input">
             </div>
             <div class="mb-3">
-                <label class="block text-gray-700 mb-1">Group</label>
-                <select name="group_id" id="edit_group"
-                    class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                <label class="field-label">Group</label>
+                <select name="group_id" id="edit_group" class="field-input">
                     <option value="">No Group</option>
                     {% for g in groups %}
                     <option value="{{ g.id }}">{{ g.name }}</option>
                     {% endfor %}
                 </select>
             </div>
-            <div class="mb-4">
+            <div class="mb-5">
                 <label class="inline-flex items-center">
-                    <input type="checkbox" name="is_active" id="edit_active"
-                        class="rounded text-green-600 focus:ring-green-500">
-                    <span class="ml-2">Active</span>
+                    <input type="checkbox" name="is_active" id="edit_active" class="rounded text-forest focus:ring-forest">
+                    <span class="ml-2 text-sm text-ink">Active</span>
                 </label>
             </div>
             <div class="flex justify-end space-x-3">
-                <button type="button" onclick="editModal.classList.add('hidden')"
-                    class="px-4 py-2 border rounded-lg hover:bg-gray-50">Cancel</button>
-                <button type="submit"
-                    class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Save</button>
+                <button type="button" onclick="editModal.classList.add('hidden')" class="btn btn-ghost">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save</button>
             </div>
         </form>
     </div>
