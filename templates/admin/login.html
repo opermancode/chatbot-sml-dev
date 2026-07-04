@@ -1,5 +1,9 @@
 {% extends "admin/base.html" %}
 {% block title %}Login{% endblock %}
+{% block head %}
+{{ super() }}
+<link rel="icon" type="image/jpeg" href="{{ url_for('static', filename='sangreen.jpg') }}">
+{% endblock %}
 {% block content %}
 <div class="min-h-screen grid md:grid-cols-2">
     <!-- Brand panel -->
