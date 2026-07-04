@@ -10,7 +10,8 @@ from services.localization import (
 )
 from services.weather_service import (
     get_weather, get_hourly_forecast,
-    format_current_weather, format_hourly_forecast,
+    format_current_with_hourly,
+    format_hourly_forecast,
 )
 
 GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search"
@@ -153,6 +154,11 @@ def today():
     return datetime.now(timezone.utc).date()
 
 
+def today_ist_str():
+    ist = timezone(timedelta(hours=5, minutes=30))
+    return datetime.now(ist).date().strftime("%Y-%m-%d")
+
+
 def max_forecast_date():
     return today() + timedelta(days=16)
 
@@ -210,13 +216,30 @@ def weather_for_city(city_name, lang="en", wind_height="10m"):
     if not geo:
         return f"{t(lang, 'not_found_city')} '{city_name}'."
     data = get_weather(geo["lat"], geo["lon"])
-    weather = format_current_weather(data, lang=lang, wind_height=wind_height)
+    hourly = get_hourly_forecast(geo["lat"], geo["lon"], today_ist_str())
+    weather = format_current_with_hourly(
+        data,
+        hourly,
+        city_name=geo["name"],
+        date=today_ist_str(),
+        lang=lang,
+        wind_height=wind_height,
+    )
     return f"📍 *{t(lang, 'weather_for')} {geo['name']}, {geo['country']}*\n\n{weather}"
 
 
 def weather_for_coords(lat, lon, lang="en", wind_height="10m"):
     data = get_weather(lat, lon)
-    return format_current_weather(data, lang=lang, wind_height=wind_height)
+    date_str = today_ist_str()
+    hourly = get_hourly_forecast(lat, lon, date_str)
+    return format_current_with_hourly(
+        data,
+        hourly,
+        city_name="Your Location",
+        date=date_str,
+        lang=lang,
+        wind_height=wind_height,
+    )
 
 
 def hourly_for_location(lat, lon, date_str, label="", lang="en"):
