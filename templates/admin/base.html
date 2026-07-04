@@ -4,44 +4,271 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sangreen Admin - {% block title %}Dashboard{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-50 min-h-screen">
-    <nav class="bg-green-700 text-white shadow-lg">
-        <div class="max-w-7xl mx-auto px-4">
-            <div class="flex justify-between items-center h-16">
-                <div class="flex items-center space-x-8">
-                    <a href="{{ url_for('admin_dashboard') }}" class="text-xl font-bold">🌿 Sangreen Admin</a>
-                    {% if current_user.is_authenticated %}
-                    <div class="hidden md:flex space-x-4">
-                        <a href="{{ url_for('admin_dashboard') }}" class="px-3 py-2 rounded hover:bg-green-600">Dashboard</a>
-                        <a href="{{ url_for('admin_users') }}" class="px-3 py-2 rounded hover:bg-green-600">Users</a>
-                        <a href="{{ url_for('admin_groups') }}" class="px-3 py-2 rounded hover:bg-green-600">Groups</a>
-                        <a href="{{ url_for('admin_broadcast') }}" class="px-3 py-2 rounded hover:bg-green-600">Broadcast</a>
-                        <a href="{{ url_for('admin_chats') }}" class="px-3 py-2 rounded hover:bg-green-600">Chat Logs</a>
-                        <a href="{{ url_for('admin_settings') }}" class="px-3 py-2 rounded hover:bg-green-600">Settings</a>
-                    </div>
-                    {% endif %}
-                </div>
-                {% if current_user.is_authenticated %}
-                <a href="{{ url_for('admin_logout') }}" class="px-3 py-2 rounded hover:bg-green-600">Logout</a>
-                {% endif %}
-            </div>
-        </div>
-    </nav>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        ink: '#12241A',
+                        forest: '#1F7A4D',
+                        forestdark: '#155C3B',
+                        solar: '#E8A33D',
+                        solardark: '#C67F1F',
+                        paper: '#F6F8F3',
+                        paper2: '#EDF1E9',
+                        line: '#DEE6D9',
+                        slate: '#5B6B62',
+                        danger: '#C0392B',
+                    },
+                    fontFamily: {
+                        display: ['Archivo', 'sans-serif'],
+                        mono: ['"IBM Plex Mono"', 'monospace'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        :root { --forest: #1F7A4D; }
+        body { font-family: 'IBM Plex Sans', system-ui, sans-serif; }
 
-    <div class="max-w-7xl mx-auto px-4 py-6">
+        /* Signature: blueprint corner brackets on panels */
+        .panel {
+            position: relative;
+            background: #ffffff;
+            border: 1px solid #DEE6D9;
+            border-radius: 3px;
+        }
+        .panel::before, .panel::after {
+            content: '';
+            position: absolute;
+            width: 11px;
+            height: 11px;
+            border-color: var(--forest);
+            border-style: solid;
+            opacity: 0.55;
+            pointer-events: none;
+        }
+        .panel::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+        .panel::after { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+
+        .eyebrow {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.6875rem;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: #5B6B62;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .eyebrow::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            background: var(--forest);
+        }
+
+        .field-input {
+            width: 100%;
+            padding: 0.55rem 0.85rem;
+            border: 1px solid #DEE6D9;
+            border-radius: 3px;
+            background: #ffffff;
+            font-size: 0.9rem;
+            color: #12241A;
+            transition: border-color .15s, box-shadow .15s;
+        }
+        .field-input:focus {
+            outline: none;
+            border-color: #1F7A4D;
+            box-shadow: 0 0 0 3px rgba(31,122,77,0.12);
+        }
+        .field-label {
+            display: block;
+            font-size: 0.78rem;
+            font-weight: 500;
+            color: #5B6B62;
+            margin-bottom: 0.3rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            font-weight: 500;
+            font-size: 0.875rem;
+            padding: 0.55rem 1.1rem;
+            border-radius: 3px;
+            transition: background-color .15s, border-color .15s, color .15s;
+            cursor: pointer;
+        }
+        .btn-primary { background: #1F7A4D; color: #fff; border: 1px solid #1F7A4D; }
+        .btn-primary:hover { background: #155C3B; border-color: #155C3B; }
+        .btn-ghost { background: transparent; color: #12241A; border: 1px solid #DEE6D9; }
+        .btn-ghost:hover { background: #F6F8F3; }
+        .btn-text { color: #1F7A4D; font-weight: 500; font-size: 0.85rem; }
+        .btn-text:hover { text-decoration: underline; }
+        .btn-text-danger { color: #C0392B; font-weight: 500; font-size: 0.85rem; }
+        .btn-text-danger:hover { text-decoration: underline; }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.2rem 0.55rem;
+            border-radius: 999px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            font-family: 'IBM Plex Mono', monospace;
+        }
+
+        .table-clean thead th {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.68rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #5B6B62;
+            font-weight: 500;
+            border-bottom: 1px solid #DEE6D9;
+        }
+        .table-clean tbody tr { border-bottom: 1px solid #EDF1E9; }
+        .table-clean tbody tr:hover { background: #F6F8F3; }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            padding: 0.55rem 0.8rem;
+            border-radius: 3px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #B9CBBE;
+            border-left: 2px solid transparent;
+            transition: background-color .15s, color .15s;
+        }
+        .nav-link:hover { background: rgba(255,255,255,0.06); color: #ffffff; }
+        .nav-link.active { background: rgba(31,122,77,0.35); color: #ffffff; border-left-color: #6FCF97; }
+        .nav-link svg { flex-shrink: 0; }
+
+        @media (max-width: 767px) {
+            #sidebar { transform: translateX(-100%); transition: transform .2s ease; }
+            #sidebar.open { transform: translateX(0); }
+        }
+    </style>
+</head>
+<body class="bg-paper text-ink min-h-screen">
+    {% if current_user.is_authenticated %}
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="fixed md:static z-40 w-64 h-screen bg-ink text-white flex flex-col">
+            <div class="px-5 py-6 border-b border-white/10">
+                <div class="flex items-center gap-2.5">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6FCF97" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v6"/><path d="M12 22c-4-1.5-7-5-7-9.5C5 8 8 4 12 4s7 4 7 8.5c0 4.5-3 8-7 9.5Z"/><path d="M12 12c2-2 5-2 7-1"/><path d="M12 12c-2-2-5-2-7-1"/></svg>
+                    <div class="font-display font-bold text-[15px] tracking-tight leading-none">SANGREEN</div>
+                </div>
+                <div class="eyebrow mt-2 text-[#7C927F]" style="--forest:#6FCF97"><span style="background:#6FCF97;width:6px;height:6px;display:inline-block"></span>Ops Console</div>
+            </div>
+
+            <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+                <a href="{{ url_for('admin_dashboard') }}" class="nav-link {% if request.path == url_for('admin_dashboard') %}active{% endif %}">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg>
+                    Dashboard
+                </a>
+                <a href="{{ url_for('admin_users') }}" class="nav-link {% if request.path == url_for('admin_users') %}active{% endif %}">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.5 3-6 6.5-6s6.5 2.5 6.5 6"/><path d="M16 8.2c1.3.2 2.3 1.3 2.3 2.7 0 1.3-.9 2.4-2.1 2.7"/><path d="M17.5 14.3c2 .5 3.5 2.2 3.5 4.3"/></svg>
+                    Users
+                </a>
+                <a href="{{ url_for('admin_groups') }}" class="nav-link {% if request.path == url_for('admin_groups') %}active{% endif %}">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 9 4.5-9 4.5-9-4.5Z"/><path d="m3 12 9 4.5 9-4.5"/><path d="m3 16.5 9 4.5 9-4.5"/></svg>
+                    Groups
+                </a>
+                <a href="{{ url_for('admin_broadcast') }}" class="nav-link {% if request.path == url_for('admin_broadcast') %}active{% endif %}">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v2a2 2 0 0 0 2 2h1l4 4V5L6 9H5a2 2 0 0 0-2 2Z"/><path d="M15 8a4 4 0 0 1 0 8"/><path d="M18 5a8 8 0 0 1 0 14"/></svg>
+                    Broadcast
+                </a>
+                <a href="{{ url_for('admin_chats') }}" class="nav-link {% if request.path == url_for('admin_chats') %}active{% endif %}">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z"/></svg>
+                    Chat Logs
+                </a>
+                <a href="{{ url_for('admin_settings') }}" class="nav-link {% if request.path == url_for('admin_settings') %}active{% endif %}">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+                    Settings
+                </a>
+            </nav>
+
+            <div class="px-3 py-4 border-t border-white/10">
+                <a href="{{ url_for('admin_logout') }}" class="nav-link">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+                    Logout
+                </a>
+            </div>
+        </aside>
+
+        <!-- Mobile overlay -->
+        <div id="overlay" class="fixed inset-0 bg-black/40 z-30 hidden md:hidden"></div>
+
+        <!-- Main -->
+        <div class="flex-1 min-w-0">
+            <header class="sticky top-0 z-20 bg-paper/90 backdrop-blur border-b border-line">
+                <div class="flex items-center gap-3 px-5 py-4 max-w-6xl mx-auto">
+                    <button id="menuBtn" class="md:hidden p-1.5 rounded border border-line" aria-label="Open menu">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+                    </button>
+                    <h1 class="font-display font-bold text-xl tracking-tight text-ink">{{ self.title() }}</h1>
+                </div>
+            </header>
+
+            <main class="max-w-6xl mx-auto px-5 py-6">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                {% for category, message in messages %}
+                <div class="mb-5 px-4 py-3 rounded text-sm flex items-center gap-2 {% if category == 'error' %}bg-red-50 text-danger border border-red-200{% else %}bg-forest/10 text-forestdark border border-forest/20{% endif %}">
+                    {% if category == 'error' %}
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="flex-shrink-0"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+                    {% else %}
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="flex-shrink-0"><path d="M20 6 9 17l-5-5"/></svg>
+                    {% endif %}
+                    {{ message }}
+                </div>
+                {% endfor %}
+                {% endif %}
+                {% endwith %}
+
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+
+    <script>
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
+        const menuBtn = document.getElementById('menuBtn');
+        function openMenu() { sidebar.classList.add('open'); overlay.classList.remove('hidden'); }
+        function closeMenu() { sidebar.classList.remove('open'); overlay.classList.add('hidden'); }
+        if (menuBtn) menuBtn.addEventListener('click', openMenu);
+        if (overlay) overlay.addEventListener('click', closeMenu);
+    </script>
+    {% else %}
+    <main class="min-h-screen">
         {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
+        <div class="max-w-md mx-auto mt-6 px-4">
         {% for category, message in messages %}
-        <div class="mb-4 p-4 rounded-lg {% if category == 'error' %}bg-red-100 text-red-700 border border-red-200{% else %}bg-green-100 text-green-700 border border-green-200{% endif %}">
+        <div class="mb-4 px-4 py-3 rounded text-sm {% if category == 'error' %}bg-red-50 text-danger border border-red-200{% else %}bg-forest/10 text-forestdark border border-forest/20{% endif %}">
             {{ message }}
         </div>
         {% endfor %}
+        </div>
         {% endif %}
         {% endwith %}
-
         {% block content %}{% endblock %}
-    </div>
+    </main>
+    {% endif %}
 </body>
 </html>
