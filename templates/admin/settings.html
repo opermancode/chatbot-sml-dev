@@ -1,103 +1,109 @@
 {% extends "admin/base.html" %}
 {% block title %}Settings{% endblock %}
 {% block content %}
-<h1 class="text-2xl font-bold mb-6">⚙️ Settings</h1>
+<div class="eyebrow mb-1">Configuration</div>
+<h2 class="font-display font-bold text-xl text-ink mb-6">Settings</h2>
 
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
     <!-- Provider Config -->
-    <div class="bg-white p-6 rounded-lg shadow-md">
-        <h2 class="text-xl font-semibold mb-4">📡 WhatsApp Provider</h2>
+    <div class="panel p-6">
+        <div class="eyebrow mb-4">WhatsApp Provider</div>
         <form method="POST">
-            <div class="mb-4">
-                <label class="block text-gray-700 mb-2">Provider</label>
-                <select name="setting_whatsapp_provider"
-                    class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+            <div class="mb-5">
+                <label class="field-label">Provider</label>
+                <select name="setting_whatsapp_provider" class="field-input">
                     <option value="twilio" {% if settings.get('whatsapp_provider','twilio') == 'twilio' %}selected{% endif %}>Twilio (Testing)</option>
                     <option value="meta" {% if settings.get('whatsapp_provider') == 'meta' %}selected{% endif %}>Meta Cloud API</option>
                 </select>
             </div>
 
-            <h3 class="font-semibold text-blue-700 pt-4 pb-2 border-b">🔵 Twilio Credentials</h3>
-            <div class="mb-3 mt-3">
-                <label class="block text-gray-700 mb-1">Account SID</label>
+            <h3 class="font-display font-semibold text-sm text-blue-700 pt-2 pb-2 border-b border-line flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-blue-500"></span>Twilio Credentials
+            </h3>
+            <div class="mb-3 mt-4">
+                <label class="field-label">Account SID</label>
                 <input type="text" name="setting_twilio_account_sid"
                     value="{{ settings.get('twilio_account_sid', env.TWILIO_ACCOUNT_SID) }}"
-                    class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 font-mono text-sm">
+                    class="field-input font-mono text-sm">
             </div>
             <div class="mb-3">
-                <label class="block text-gray-700 mb-1">Auth Token</label>
+                <label class="field-label">Auth Token</label>
                 <input type="password" name="setting_twilio_auth_token"
                     value="{{ settings.get('twilio_auth_token', env.TWILIO_AUTH_TOKEN) }}"
-                    class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 font-mono text-sm">
-                <label class="inline-flex items-center mt-1">
-                    <input type="checkbox" class="toggle-pw rounded text-green-600" data-target="setting_twilio_auth_token">
-                    <span class="ml-1 text-xs text-gray-500">Show</span>
+                    class="field-input font-mono text-sm">
+                <label class="inline-flex items-center mt-1.5">
+                    <input type="checkbox" class="toggle-pw rounded text-forest focus:ring-forest" data-target="setting_twilio_auth_token">
+                    <span class="ml-1.5 text-xs text-slate">Show</span>
                 </label>
             </div>
-            <div class="mb-4">
-                <label class="block text-gray-700 mb-1">WhatsApp Number</label>
+            <div class="mb-5">
+                <label class="field-label">WhatsApp Number</label>
                 <input type="text" name="setting_twilio_whatsapp_number"
                     value="{{ settings.get('twilio_whatsapp_number', env.TWILIO_WHATSAPP_NUMBER) }}"
                     placeholder="+14155238886"
-                    class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 font-mono text-sm">
+                    class="field-input font-mono text-sm">
             </div>
 
-            <h3 class="font-semibold text-purple-700 pt-4 pb-2 border-b">🟣 Meta Cloud API Credentials</h3>
-            <div class="mb-3 mt-3">
-                <label class="block text-gray-700 mb-1">Access Token</label>
+            <h3 class="font-display font-semibold text-sm text-purple-700 pt-2 pb-2 border-b border-line flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-purple-500"></span>Meta Cloud API Credentials
+            </h3>
+            <div class="mb-3 mt-4">
+                <label class="field-label">Access Token</label>
                 <input type="password" name="setting_meta_whatsapp_token"
                     value="{{ settings.get('meta_whatsapp_token', env.META_WHATSAPP_TOKEN) }}"
-                    class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 font-mono text-sm">
-                <label class="inline-flex items-center mt-1">
-                    <input type="checkbox" class="toggle-pw rounded text-green-600" data-target="setting_meta_whatsapp_token">
-                    <span class="ml-1 text-xs text-gray-500">Show</span>
+                    class="field-input font-mono text-sm">
+                <label class="inline-flex items-center mt-1.5">
+                    <input type="checkbox" class="toggle-pw rounded text-forest focus:ring-forest" data-target="setting_meta_whatsapp_token">
+                    <span class="ml-1.5 text-xs text-slate">Show</span>
                 </label>
             </div>
             <div class="mb-3">
-                <label class="block text-gray-700 mb-1">Phone Number ID</label>
+                <label class="field-label">Phone Number ID</label>
                 <input type="text" name="setting_meta_phone_number_id"
                     value="{{ settings.get('meta_phone_number_id', env.META_PHONE_NUMBER_ID) }}"
-                    class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 font-mono text-sm">
+                    class="field-input font-mono text-sm">
             </div>
-            <div class="mb-4">
-                <label class="block text-gray-700 mb-1">Verify Token</label>
+            <div class="mb-5">
+                <label class="field-label">Verify Token</label>
                 <input type="password" name="setting_meta_verify_token"
                     value="{{ settings.get('meta_verify_token', env.META_VERIFY_TOKEN) }}"
-                    class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 font-mono text-sm">
-                <label class="inline-flex items-center mt-1">
-                    <input type="checkbox" class="toggle-pw rounded text-green-600" data-target="setting_meta_verify_token">
-                    <span class="ml-1 text-xs text-gray-500">Show</span>
+                    class="field-input font-mono text-sm">
+                <label class="inline-flex items-center mt-1.5">
+                    <input type="checkbox" class="toggle-pw rounded text-forest focus:ring-forest" data-target="setting_meta_verify_token">
+                    <span class="ml-1.5 text-xs text-slate">Show</span>
                 </label>
             </div>
 
-            <button type="submit"
-                class="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 font-semibold">💾 Save All Settings</button>
+            <button type="submit" class="btn btn-primary w-full">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+                Save All Settings
+            </button>
         </form>
     </div>
 
     <!-- Current Config Info -->
-    <div class="bg-white p-6 rounded-lg shadow-md">
-        <h2 class="text-xl font-semibold mb-4">🔐 Active Configuration</h2>
-        <p class="text-sm text-gray-500 mb-4">Values from DB (overrides) or <code>.env</code> fallback.</p>
-        <div class="space-y-2 text-sm">
-            <div class="flex justify-between py-1 border-b">
-                <span class="font-medium">Provider</span>
-                <span class="px-2 py-0.5 rounded text-xs {% if settings.get('whatsapp_provider','twilio') == 'twilio' %}bg-blue-100 text-blue-700{% else %}bg-purple-100 text-purple-700{% endif %}">{{ settings.get('whatsapp_provider','twilio')|upper }}</span>
+    <div class="panel p-6">
+        <div class="eyebrow mb-2">Active Configuration</div>
+        <p class="text-slate text-xs mb-4">Values from DB (overrides) or <code class="font-mono">.env</code> fallback.</p>
+        <div class="space-y-0 text-sm">
+            <div class="flex justify-between py-2.5 border-b border-line">
+                <span class="text-slate">Provider</span>
+                <span class="badge {% if settings.get('whatsapp_provider','twilio') == 'twilio' %}bg-blue-50 text-blue-700{% else %}bg-purple-50 text-purple-700{% endif %}">{{ settings.get('whatsapp_provider','twilio')|upper }}</span>
             </div>
-            <div class="flex justify-between py-1 border-b">
-                <span class="font-medium">Twilio SID</span>
+            <div class="flex justify-between py-2.5 border-b border-line">
+                <span class="text-slate">Twilio SID</span>
                 <span class="font-mono text-xs">{{ (settings.get('twilio_account_sid', env.TWILIO_ACCOUNT_SID)[:15] + '...') if settings.get('twilio_account_sid', env.TWILIO_ACCOUNT_SID) else 'Not set' }}</span>
             </div>
-            <div class="flex justify-between py-1 border-b">
-                <span class="font-medium">Twilio Number</span>
+            <div class="flex justify-between py-2.5 border-b border-line">
+                <span class="text-slate">Twilio Number</span>
                 <span class="font-mono text-xs">{{ settings.get('twilio_whatsapp_number', env.TWILIO_WHATSAPP_NUMBER) or 'Not set' }}</span>
             </div>
-            <div class="flex justify-between py-1 border-b">
-                <span class="font-medium">Meta Token</span>
+            <div class="flex justify-between py-2.5 border-b border-line">
+                <span class="text-slate">Meta Token</span>
                 <span class="font-mono text-xs">{{ '********' if settings.get('meta_whatsapp_token', env.META_WHATSAPP_TOKEN) else 'Not set' }}</span>
             </div>
-            <div class="flex justify-between py-1 border-b">
-                <span class="font-medium">Meta Phone ID</span>
+            <div class="flex justify-between py-2.5">
+                <span class="text-slate">Meta Phone ID</span>
                 <span class="font-mono text-xs">{{ settings.get('meta_phone_number_id', env.META_PHONE_NUMBER_ID) or 'Not set' }}</span>
             </div>
         </div>
@@ -105,13 +111,13 @@
 </div>
 
 <!-- Webhook Info -->
-<div class="mt-6 bg-white p-6 rounded-lg shadow-md">
-    <h2 class="text-xl font-semibold mb-4">🔗 Webhook URL</h2>
-    <p class="text-gray-600 mb-2">Configure this URL in your Twilio WhatsApp Sandbox or Meta Webhook settings:</p>
-    <code class="block px-4 py-3 bg-gray-100 rounded-lg text-sm font-mono break-all">
+<div class="mt-5 panel p-6">
+    <div class="eyebrow mb-3">Webhook URL</div>
+    <p class="text-slate text-sm mb-3">Configure this URL in your Twilio WhatsApp Sandbox or Meta Webhook settings:</p>
+    <code class="block px-4 py-3 bg-paper2 rounded border border-line text-sm font-mono break-all">
         {{ request.host_url }}webhook/whatsapp
     </code>
-    <p class="text-xs text-gray-400 mt-2">Make sure this URL is publicly accessible (use ngrok for local testing).</p>
+    <p class="text-xs text-slate mt-2">Make sure this URL is publicly accessible (use ngrok for local testing).</p>
 </div>
 
 <script>
