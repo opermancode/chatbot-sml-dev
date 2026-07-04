@@ -80,6 +80,13 @@ def send_provider(to, body):
         raise ValueError(f"Unknown provider: {provider}")
 
 
+
+# ─── Landing Page ─────────────────────────────────────────────────────────
+
+@app.route("/")
+def landing():
+    return render_template("landing.html")
+
 # ─── Admin Auth ───────────────────────────────────────────────────────────
 
 
