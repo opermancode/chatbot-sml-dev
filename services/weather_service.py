@@ -13,7 +13,7 @@ def get_weather(lat: float, lon: float):
             "temperature_2m_max",
             "temperature_2m_min",
             "precipitation_sum",
-            "weathercode",
+            "weather_code",
             "wind_speed_10m_max",
         ],
         "current": [
@@ -21,7 +21,7 @@ def get_weather(lat: float, lon: float):
             "apparent_temperature", "precipitation",
             "precipitation_probability", "cloud_cover",
             "pressure_msl",
-            "weathercode", "wind_speed_10m",
+            "weather_code", "wind_speed_10m",
             "wind_gusts_10m", "wind_direction_10m",
             "wind_speed_80m", "wind_speed_120m", "wind_speed_180m",
         ],
@@ -102,7 +102,7 @@ def format_current_weather(data: dict) -> str:
     if not current:
         return "Sorry, no weather data available."
 
-    wcode = current.get("weathercode", -1)
+    wcode = current.get("weather_code", -1)
     desc = weather_code_desc(wcode)
     temp = current.get("temperature_2m", "N/A")
     feels = current.get("apparent_temperature")
@@ -161,7 +161,7 @@ def get_hourly_forecast(lat: float, lon: float, date: str):
         "longitude": lon,
         "hourly": [
             "temperature_2m", "precipitation_probability",
-            "precipitation", "weathercode",
+            "precipitation", "weather_code",
             "wind_speed_10m", "wind_gusts_10m",
         ],
         "start_date": date,
@@ -192,7 +192,7 @@ def format_hourly_forecast(data: dict, city_name="", date="") -> str:
     times = hourly["time"]
     temps = hourly.get("temperature_2m", [])
     rain_chances = hourly.get("precipitation_probability", [])
-    codes = hourly.get("weathercode", [])
+    codes = hourly.get("weather_code", [])
     winds = hourly.get("wind_speed_10m", [])
 
     # Format date for display
@@ -242,7 +242,7 @@ def format_weather_forecast(data: dict) -> str:
     temp = current.get("temperature_2m", "N/A")
     humidity = current.get("relative_humidity_2m", "N/A")
     wind = current.get("wind_speed_10m", "N/A")
-    wcode = current.get("weathercode", -1)
+    wcode = current.get("weather_code", -1)
     desc = weather_code_desc(wcode)
 
     lines = [
@@ -259,7 +259,7 @@ def format_weather_forecast(data: dict) -> str:
     max_temps = daily.get("temperature_2m_max", [])
     min_temps = daily.get("temperature_2m_min", [])
     precip = daily.get("precipitation_sum", [])
-    codes = daily.get("weathercode", [])
+    codes = daily.get("weather_code", [])
 
     for i in range(len(dates)):
         day_desc = weather_code_desc(codes[i]) if i < len(codes) else ""
