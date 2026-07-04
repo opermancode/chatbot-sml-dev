@@ -298,6 +298,7 @@ def handle_location(phone, lat, lon):
             return forecast + "\n\nReply *0* for main menu."
 
     # Default: current weather
+    user_state[phone] = "menu"
     weather = weather_for_coords(lat, lon)
     log_chat(phone, f"Location shared: {lat},{lon}", weather,
              "outgoing", message_type="location", user_id=user_id)
