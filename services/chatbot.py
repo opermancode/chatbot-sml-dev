@@ -80,8 +80,9 @@ def welcome_msg(user, lang="en"):
     lines.append(t(lang, "choose_option"))
     lines.append(f"1️⃣ *{t(lang, 'current_weather')}*")
     lines.append(f"2️⃣ *{t(lang, 'forecast_date')}*")
+    lines.append(f"3️⃣ *{t(lang, 'change_language')}*")
     lines.append("")
-    lines.append(t(lang, "reply_1_2"))
+    lines.append(f"{t(lang, 'reply_1_2')} / 3")
     return "\n".join(lines)
 
 
@@ -146,6 +147,7 @@ def fallback_msg(lang):
         f"{t(lang, 'unknown')}\n"
         f"1️⃣ {t(lang, 'current_weather')}\n"
         f"2️⃣ {t(lang, 'forecast_date')}\n"
+        f"3️⃣ {t(lang, 'change_language')}\n"
         f"0️⃣ {t(lang, 'main_menu')}"
     )
 
@@ -430,6 +432,12 @@ def handle_incoming(phone, message):
         user_state[phone] = "awaiting_forecast_date"
         resp = date_prompt(lang)
         log_chat(phone, message, resp, "outgoing", user_id=user_id)
+        return resp
+
+    if msg == "3":
+        user_state[phone] = "awaiting_language"
+        resp = language_menu()
+        log_chat(phone, message, resp, "outgoing", message_type="language", user_id=user_id)
         return resp
 
     # ─── Fallback ──────────────────────────────────────────────────────
