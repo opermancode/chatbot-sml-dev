@@ -318,35 +318,25 @@ def handle_incoming(phone, message):
         return resp
 
     if state == "awaiting_current_wind_height":
-        import sys
-        print(f"[DEBUG] awaiting_current_wind_height: phone={phone}, msg={msg!r}, state={state!r}", file=sys.stderr, flush=True)
         wind_height = WIND_HEIGHT_BY_NUMBER.get(msg)
-        print(f"[DEBUG] wind_height lookup: {wind_height}", file=sys.stderr, flush=True)
         if not wind_height:
             resp = wind_height_menu(lang, invalid=True)
             log_chat(phone, message, resp, "outgoing", message_type="wind_height", user_id=user_id)
-            print(f"[DEBUG] returning invalid wind height menu", file=sys.stderr, flush=True)
             return resp
 
         lat = user_state.get(phone + "_lat")
         lon = user_state.get(phone + "_lon")
-        print(f"[DEBUG] lat={lat}, lon={lon}", file=sys.stderr, flush=True)
         if lat is None or lon is None:
             user_state[phone] = "menu"
             resp = t(lang, "something_wrong")
             log_chat(phone, message, resp, "outgoing", user_id=user_id)
-            print(f"[DEBUG] lat/lon missing, returning something_wrong", file=sys.stderr, flush=True)
             return resp
 
         user_state[phone] = "menu"
-        print(f"[DEBUG] calling weather_for_coords(lat={lat}, lon={lon}, wind_height={wind_height})", file=sys.stderr, flush=True)
         weather = weather_for_coords(lat, lon, lang=lang, wind_height=wind_height)
-        print(f"[DEBUG] weather_for_coords returned {len(weather)} chars", file=sys.stderr, flush=True)
         resp = weather + "\n\n" + t(lang, "reply_main")
-        print(f"[DEBUG] final resp length: {len(resp)}", file=sys.stderr, flush=True)
         log_chat(phone, message, resp, "outgoing",
                  message_type="location_weather", user_id=user_id)
-        print(f"[DEBUG] returning response", file=sys.stderr, flush=True)
         return resp
 
     # ─── Awaiting wind height for forecast ─────────────────────────────
