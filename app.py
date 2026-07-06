@@ -409,14 +409,7 @@ def webhook_whatsapp():
     if response is None:
         return "", 200
     twiml = MessagingResponse()
-    if "👋" in response:
-        base = request.url_root.rstrip("/")
-        if base.startswith("http://"):
-            base = base.replace("http://", "https://", 1)
-        msg = twiml.message(response)
-        msg.media(f"{base}/static/sangreen.jpg")
-    else:
-        twiml.message(response)
+    twiml.message(response)
     return str(twiml), 200, {"Content-Type": "text/xml"}
 
 
