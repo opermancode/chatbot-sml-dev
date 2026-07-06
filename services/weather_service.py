@@ -239,7 +239,7 @@ def format_hourly_forecast(data: dict, city_name="", date="", lang="en", wind_he
 
     lines.append(f"Wind column: {wind_height}")
     lines.append("```")
-    lines.append("Time  Rain  Wind  Cond        Temp")
+    lines.append("Time  Rain  Wind  Temp  Condition")
     lines.append("-----------------------------------")
 
     for i in range(len(times)):
@@ -248,10 +248,10 @@ def format_hourly_forecast(data: dict, city_name="", date="", lang="en", wind_he
         rain = f"{rain_chances[i]:.0f}%" if i < len(rain_chances) and rain_chances[i] is not None else "-"
         wind = f"{winds[i]:.0f}" if i < len(winds) and winds[i] is not None else "-"
         wcode = codes[i] if i < len(codes) else -1
-        cond = weather_code_desc(wcode).split(" ")[0]
+        cond = weather_code_desc(wcode)
 
         lines.append(
-            f"{fmt(time_str, 5)} {fmt(rain, 5)} {fmt(wind, 5)} {fmt(cond, 11)} {temp}"
+            f"{fmt(time_str, 5)} {fmt(rain, 5)} {fmt(wind, 5)} {fmt(temp, 6)} {cond}"
         )
 
     lines.append("```")
