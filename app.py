@@ -390,6 +390,8 @@ def admin_settings():
 
 @app.route("/webhook/whatsapp", methods=["POST"])
 def webhook_whatsapp():
+    import sys
+
     phone = request.form.get("From", "").replace("whatsapp:", "").strip()
     if phone and not phone.startswith("+"):
         phone = "+" + phone
@@ -399,20 +401,32 @@ def webhook_whatsapp():
     lat = request.form.get("Latitude")
     lon = request.form.get("Longitude")
 
+    print(f"[WEBHOOK] phone={phone!r} body={body!r} lat={lat!r} lon={lon!r} num_media={num_media}", file=sys.stderr, flush=True)
+
     if body.strip() == "test":
         response = f"Test reply at {datetime.now().strftime('%H:%M:%S')}. Your phone: {phone}"
+        print(f"[WEBHOOK] test response={response!r}", file=sys.stderr, flush=True)
     elif lat and lon:
         response = handle_location(phone, float(lat), float(lon))
+        print(f"[WEBHOOK] location response={response!r}", file=sys.stderr, flush=True)
     elif num_media > 0:
         response = "Thanks for sharing! For weather, please share your live location via the 📍 attachment button."
+        print(f"[WEBHOOK] media response={response!r}", file=sys.stderr, flush=True)
     else:
         response = handle_incoming(phone, body)
+        print(f"[WEBHOOK] incoming response={response!r}", file=sys.stderr, flush=True)
 
     if response is None:
+        print(f"[WEBHOOK] response is None, returning empty 200", file=sys.stderr, flush=True)
         return "", 200
+
+    print(f"[WEBHOOK] response type={type(response).__name__} len={len(response)}", file=sys.stderr, flush=True)
     twiml = MessagingResponse()
     twiml.message(response)
-    return str(twiml), 200, {"Content-Type": "text/xml"}
+    twiml_str = str(twiml)
+    print(f"[WEBHOOK] twiml length={len(twiml_str)}", file=sys.stderr, flush=True)
+    print(f"[WEBHOOK] twiml preview={twiml_str[:200]}", file=sys.stderr, flush=True)
+    return twiml_str, 200, {"Content-Type": "text/xml"}
 
 
 # ─── Init DB ──────────────────────────────────────────────────────────────
