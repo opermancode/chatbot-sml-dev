@@ -399,7 +399,9 @@ def webhook_whatsapp():
     lat = request.form.get("Latitude")
     lon = request.form.get("Longitude")
 
-    if lat and lon:
+    if body.strip() == "test":
+        response = f"Test reply at {datetime.now().strftime('%H:%M:%S')}. Your phone: {phone}"
+    elif lat and lon:
         response = handle_location(phone, float(lat), float(lon))
     elif num_media > 0:
         response = "Thanks for sharing! For weather, please share your live location via the 📍 attachment button."
