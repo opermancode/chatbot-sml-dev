@@ -204,6 +204,30 @@
         }
         @keyframes w-spin { to { transform: rotate(360deg); } }
         #wCitySuggestions button:hover { background: #F6F8F3; }
+
+        /* Weather-app sky gradients */
+        .sky-clear-day { background: linear-gradient(160deg, #2E86DE 0%, #4FA3F7 45%, #8ED1FC 100%); }
+        .sky-clear-night { background: linear-gradient(160deg, #0F2027 0%, #203A43 55%, #2C5364 100%); }
+        .sky-cloudy-day { background: linear-gradient(160deg, #64798d 0%, #8fa3b3 50%, #c9d6df 100%); }
+        .sky-cloudy-night { background: linear-gradient(160deg, #1c1e21 0%, #3a3d42 55%, #52565c 100%); }
+        .sky-rain { background: linear-gradient(160deg, #2b3a55 0%, #45618f 50%, #6b8cae 100%); }
+        .sky-storm { background: linear-gradient(160deg, #0f1420 0%, #29323c 50%, #414d5c 100%); }
+        .sky-snow { background: linear-gradient(160deg, #5b7a9d 0%, #a8c5dc 55%, #dceaf2 100%); }
+
+        .glass-card {
+            background: rgba(255,255,255,0.16);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(255,255,255,0.28);
+            border-radius: 16px;
+        }
+        .glass-eyebrow {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.68rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.75);
+        }
     </style>
 <base target="_blank">
 </head>
@@ -218,7 +242,7 @@
             </div>
             <div class="hidden md:flex items-center gap-6">
                 <a href="#weather" class="text-sm font-medium text-slate hover:text-forest transition-colors">Live Weather</a>
-                <a href="#why" class="text-sm font-medium text-slate hover:text-forest transition-colors">Why Weather Bot</a>
+                <a href="#whatsapp" class="text-sm font-medium text-slate hover:text-forest transition-colors">WhatsApp Bot</a>
                 <a href="#how" class="text-sm font-medium text-slate hover:text-forest transition-colors">How It Works</a>
                 <a href="#features" class="text-sm font-medium text-slate hover:text-forest transition-colors">Features</a>
                 </div>
@@ -229,14 +253,52 @@
         <!-- Mobile menu -->
         <div id="mobileMenu" class="hidden md:hidden border-t border-line bg-paper px-5 py-4 space-y-3">
             <a href="#weather" class="block text-sm text-slate">Live Weather</a>
-            <a href="#why" class="block text-sm text-slate">Why Weather Bot</a>
+            <a href="#whatsapp" class="block text-sm text-slate">WhatsApp Bot</a>
             <a href="#how" class="block text-sm text-slate">How It Works</a>
             <a href="#features" class="block text-sm text-slate">Features</a>
             </div>
     </nav>
 
-    <!-- Hero Section -->
-    <section class="relative pt-24 pb-16 md:pt-32 md:pb-24 overflow-hidden">
+    <!-- Live Weather Hero -->
+    <section id="weather" class="relative overflow-hidden">
+        <div id="weatherHeroBg" class="sky-clear-day relative pt-24 pb-20 md:pt-32 md:pb-28 transition-colors duration-700">
+            <div class="absolute top-10 right-[8%] w-72 h-72 bg-white/20 rounded-full blur-3xl pointer-events-none animate-float"></div>
+            <div class="absolute -bottom-16 -left-16 w-80 h-80 bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
+            <div id="weatherHeroIcon" class="absolute top-16 left-[6%] text-6xl opacity-30 select-none pointer-events-none hidden md:block animate-float">☀️</div>
+
+            <div class="max-w-5xl mx-auto px-5 relative z-10">
+                <div class="text-center max-w-2xl mx-auto mb-8">
+                    <div class="inline-flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-white/80 mb-4">
+                        <span class="w-1.5 h-1.5 rounded-full bg-white/80"></span>
+                        Live from Open-Meteo
+                    </div>
+                    <h1 class="font-display font-extrabold text-4xl md:text-5xl text-white leading-tight mb-4 drop-shadow-sm">Check the Weather,<br>Right Now</h1>
+                    <p class="text-white/90 text-lg max-w-lg mx-auto">Share your location or search any site to see live conditions and multi-level wind — the same data your team gets on WhatsApp.</p>
+                </div>
+
+                <!-- Search / locate bar (glass) -->
+                <div class="max-w-xl mx-auto mb-10 relative">
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <div class="relative flex-1">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="2" class="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+                            <input id="wCitySearch" type="text" autocomplete="off" placeholder="Search a city (e.g. Pune, Mumbai)…"
+                                class="w-full pl-11 pr-4 py-3 rounded-full text-sm bg-white/20 backdrop-blur-md border border-white/30 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/60 focus:bg-white/25 transition-colors">
+                            <div id="wCitySuggestions" class="hidden absolute top-full left-0 right-0 mt-2 bg-white border border-line rounded-xl shadow-xl divide-y divide-line overflow-hidden z-20"></div>
+                        </div>
+                        <button id="wLocateBtn" class="bg-white text-ink px-5 py-3 rounded-full text-sm font-semibold hover:bg-white/90 transition-colors inline-flex items-center gap-2 justify-center whitespace-nowrap shadow-lg">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v3"/><path d="M12 19v3"/><path d="M2 12h3"/><path d="M19 12h3"/><circle cx="12" cy="12" r="6"/></svg>
+                            Use My Location
+                        </button>
+                    </div>
+                </div>
+
+                <div id="wWidget" class="min-h-[200px]"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- WhatsApp Bot Section -->
+    <section id="whatsapp" class="relative pt-16 pb-16 md:pt-24 md:pb-24 overflow-hidden bg-white">
         <div class="absolute inset-0 bg-gradient-to-br from-forest/5 via-transparent to-solar/5 pointer-events-none"></div>
         <div class="max-w-6xl mx-auto px-5">
             <div class="grid md:grid-cols-2 gap-12 items-center">
@@ -245,10 +307,10 @@
                         <span style="background:#1F7A4D;width:6px;height:6px;display:inline-block"></span>
                         Sangreen Future Renewables
                     </div>
-                    <h1 class="font-display font-extrabold text-4xl md:text-5xl lg:text-6xl leading-tight mb-6">
+                    <h2 class="font-display font-extrabold text-4xl md:text-5xl leading-tight mb-6">
                         Weather Intelligence<br>
                         <span class="gradient-text">On WhatsApp</span>
-                    </h1>
+                    </h2>
                     <p class="text-slate text-lg md:text-xl leading-relaxed mb-8 max-w-lg">
                         Real-time weather updates and 16-day forecasts delivered instantly to your field teams. 
                         No apps to install. No passwords to remember. Just message and know.
@@ -316,40 +378,8 @@
         </div>
     </section>
 
-    <!-- Live Weather Widget -->
-    <section id="weather" class="py-16 md:py-24 bg-white relative overflow-hidden">
-        <div class="absolute inset-0 bg-gradient-to-br from-forest/5 via-transparent to-solar/5 pointer-events-none"></div>
-        <div class="max-w-6xl mx-auto px-5 relative z-10">
-            <div class="text-center max-w-2xl mx-auto mb-10">
-                <div class="eyebrow justify-center mb-4">
-                    <span style="background:#1F7A4D;width:6px;height:6px;display:inline-block"></span>
-                    Try It Live — No WhatsApp Needed
-                </div>
-                <h2 class="font-display font-bold text-3xl md:text-4xl mb-4">See Your Site's Weather<br>Right Now</h2>
-                <p class="text-slate text-lg">The same Open-Meteo data the WhatsApp bot sends — right here in your browser, including multi-level wind for turbine and panel assessments.</p>
-            </div>
-
-            <!-- Search / locate bar -->
-            <div class="max-w-xl mx-auto mb-10 relative">
-                <div class="flex flex-col sm:flex-row gap-3">
-                    <div class="relative flex-1">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5B6B62" stroke-width="2" class="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-                        <input id="wCitySearch" type="text" autocomplete="off" placeholder="Search a city (e.g. Pune, Mumbai)…"
-                            class="w-full pl-9 pr-3 py-2.5 border border-line rounded text-sm bg-white focus:outline-none focus:ring-2 focus:ring-forest/30 focus:border-forest">
-                        <div id="wCitySuggestions" class="hidden absolute top-full left-0 right-0 mt-2 bg-white border border-line rounded shadow-lg divide-y divide-line overflow-hidden z-20"></div>
-                    </div>
-                    <button id="wLocateBtn" class="bg-forest text-white px-4 py-2.5 rounded text-sm font-medium hover:bg-forestdark transition-colors inline-flex items-center gap-2 justify-center whitespace-nowrap">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v3"/><path d="M12 19v3"/><path d="M2 12h3"/><path d="M19 12h3"/><circle cx="12" cy="12" r="6"/></svg>
-                        Use My Location
-                    </button>
-                </div>
-            </div>
-
-            <div id="wWidget" class="min-h-[160px]"></div>
-        </div>
-    </section>
-
     <!-- Why Section -->
+
     <section id="why" class="py-16 md:py-24 bg-white relative">
         <div class="max-w-6xl mx-auto px-5">
             <div class="text-center max-w-2xl mx-auto mb-16">
@@ -719,6 +749,24 @@
         };
         const weatherDesc = (code) => WEATHER_CODES[code] || ['Unknown', '❓'];
 
+        const heroBg = document.getElementById('weatherHeroBg');
+        const heroIcon = document.getElementById('weatherHeroIcon');
+
+        function getSkyClass(code, isDay) {
+            const day = isDay === undefined || !!isDay;
+            if ([95, 96, 99].includes(code)) return 'sky-storm';
+            if ([71, 73, 75, 77, 85, 86].includes(code)) return 'sky-snow';
+            if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return 'sky-rain';
+            if ([2, 3, 45, 48].includes(code)) return day ? 'sky-cloudy-day' : 'sky-cloudy-night';
+            return day ? 'sky-clear-day' : 'sky-clear-night';
+        }
+
+        function applySky(code, isDay) {
+            if (!heroBg) return;
+            heroBg.className = 'relative pt-24 pb-20 md:pt-32 md:pb-28 transition-colors duration-700 ' + getSkyClass(code, isDay);
+            if (heroIcon) heroIcon.textContent = weatherDesc(code)[1];
+        }
+
         function windLabel(kmh) {
             if (kmh == null) return '';
             if (kmh < 5) return 'Calm';
@@ -756,20 +804,20 @@
 
         function renderLoading(label) {
             widget.innerHTML = `
-                <div class="feature-card p-10 max-w-md mx-auto text-center">
-                    <div class="w-spinner mb-4"></div>
-                    <div class="text-slate text-sm">Fetching live weather${label ? ` for ${label}` : ''}…</div>
+                <div class="glass-card p-10 max-w-md mx-auto text-center">
+                    <div class="w-spinner mb-4" style="border-color: rgba(255,255,255,0.3); border-top-color: #fff;"></div>
+                    <div class="text-white/90 text-sm">Fetching live weather${label ? ` for ${label}` : ''}…</div>
                 </div>`;
         }
 
         function renderError(msg) {
             widget.innerHTML = `
-                <div class="feature-card p-8 max-w-md mx-auto text-center">
-                    <div class="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C0392B" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+                <div class="glass-card p-8 max-w-md mx-auto text-center">
+                    <div class="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-4">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
                     </div>
-                    <p class="text-slate text-sm mb-4">${msg}</p>
-                    <button onclick="document.getElementById('wLocateBtn').click()" class="btn-retry bg-forest text-white px-4 py-2 rounded text-sm font-medium hover:bg-forestdark transition-colors">Try Again</button>
+                    <p class="text-white/90 text-sm mb-4">${msg}</p>
+                    <button onclick="document.getElementById('wLocateBtn').click()" class="bg-white text-ink px-4 py-2 rounded-full text-sm font-semibold hover:bg-white/90 transition-colors">Try Again</button>
                 </div>`;
         }
 
@@ -816,19 +864,21 @@
             const hourly = data.hourly || {};
             const [desc, emoji] = weatherDesc(cur.weather_code);
 
+            applySky(cur.weather_code, cur.is_day);
+
             const heights = [
-                { key: '10m', label: 'Ground Level (10 m)', speed: cur.wind_speed_10m, dir: cur.wind_direction_10m, gust: cur.wind_gusts_10m, color: '#1F7A4D' },
-                { key: '80m', label: '80 m', speed: cur.wind_speed_80m, color: '#C67F1F' },
-                { key: '120m', label: '120 m', speed: cur.wind_speed_120m, color: '#2563EB' },
-                { key: '180m', label: '180 m', speed: cur.wind_speed_180m, color: '#7C3AED' },
+                { key: '10m', label: 'Ground Level (10 m)', speed: cur.wind_speed_10m, dir: cur.wind_direction_10m, gust: cur.wind_gusts_10m, color: '#A8E6C3' },
+                { key: '80m', label: '80 m', speed: cur.wind_speed_80m, color: '#FFE39B' },
+                { key: '120m', label: '120 m', speed: cur.wind_speed_120m, color: '#B7D4FF' },
+                { key: '180m', label: '180 m', speed: cur.wind_speed_180m, color: '#E3C6FF' },
             ];
 
             const windCardsHtml = heights.map(h => `
-                <div class="feature-card wind-height-card p-4" style="--wind-color:${h.color}">
-                    <div class="text-xs text-slate mb-1">${h.label}</div>
-                    <div class="font-display font-bold text-2xl text-ink">${h.speed != null ? Math.round(h.speed) : '—'}<span class="text-sm font-normal text-slate ml-1">km/h</span></div>
-                    <div class="text-xs text-slate mt-1">${windLabel(h.speed)}${h.dir != null ? ` · ${windDirLabel(h.dir)}` : ''}</div>
-                    ${h.gust != null ? `<div class="mt-2 pt-2 border-t border-line text-xs text-slate">Gusts: <span class="font-medium text-ink">${Math.round(h.gust)} km/h</span></div>` : ''}
+                <div class="glass-card p-4" style="border-left: 4px solid ${h.color}">
+                    <div class="text-xs text-white/70 mb-1">${h.label}</div>
+                    <div class="font-display font-bold text-2xl text-white">${h.speed != null ? Math.round(h.speed) : '—'}<span class="text-sm font-normal text-white/70 ml-1">km/h</span></div>
+                    <div class="text-xs text-white/80 mt-1">${windLabel(h.speed)}${h.dir != null ? ` · ${windDirLabel(h.dir)}` : ''}</div>
+                    ${h.gust != null ? `<div class="mt-2 pt-2 border-t border-white/20 text-xs text-white/70">Gusts: <span class="font-medium text-white">${Math.round(h.gust)} km/h</span></div>` : ''}
                 </div>`).join('');
 
             // Build next-24h hourly slice starting at current hour
@@ -849,77 +899,80 @@
             const hWind180 = hSlice(hourly.wind_speed_180m);
 
             const hourlyCardsHtml = hTime.map((t, i) => `
-                <div class="hourly-card">
-                    <div class="text-xs text-slate mb-1">${i === 0 ? 'Now' : fmtHour(t)}</div>
+                <div class="hourly-card glass-card py-3 px-1">
+                    <div class="text-xs text-white/70 mb-1">${i === 0 ? 'Now' : fmtHour(t)}</div>
                     <div class="text-xl">${weatherDesc(hCode[i])[1]}</div>
-                    <div class="font-display font-semibold text-sm mt-1">${Math.round(hTemp[i])}°</div>
-                    <div class="text-xs text-blue-600 mt-0.5">${hPrecip[i] != null ? hPrecip[i] + '%' : ''}</div>
-                    <div class="text-xs text-slate mt-0.5">${hWind10[i] != null ? Math.round(hWind10[i]) + ' km/h' : ''}</div>
+                    <div class="font-display font-semibold text-sm mt-1 text-white">${Math.round(hTemp[i])}°</div>
+                    <div class="text-xs text-[#BFE3FF] mt-0.5">${hPrecip[i] != null ? hPrecip[i] + '%' : ''}</div>
+                    <div class="text-xs text-white/70 mt-0.5">${hWind10[i] != null ? Math.round(hWind10[i]) + ' km/h' : ''}</div>
                 </div>`).join('');
 
             widget.innerHTML = `
                 <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
                     <div>
-                        <div class="font-display font-bold text-lg text-ink">📍 ${label}</div>
-                        <div class="text-xs text-slate">Local time ${fmtTime(cur.time)} · Updated just now</div>
+                        <div class="font-display font-bold text-lg text-white flex items-center gap-1.5">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 2C8 2 5 5.5 5 9.5c0 5 7 12.5 7 12.5s7-7.5 7-12.5C19 5.5 16 2 12 2Z"/><circle cx="12" cy="9.5" r="2.3"/></svg>
+                            ${label}
+                        </div>
+                        <div class="text-xs text-white/70">Local time ${fmtTime(cur.time)} · Updated just now</div>
                     </div>
-                    <div class="weather-chip"><span>${cur.is_day ? '☀️ Daytime' : '🌙 Night'}</span></div>
+                    <div class="glass-card px-3 py-1.5"><span class="text-xs text-white">${cur.is_day ? '☀️ Daytime' : '🌙 Night'}</span></div>
                 </div>
 
                 <div class="grid md:grid-cols-3 gap-4 mb-6">
-                    <div class="feature-card p-6 md:col-span-1 flex flex-col items-center justify-center text-center">
-                        <div class="text-5xl mb-2">${emoji}</div>
-                        <div class="font-display font-bold text-4xl text-ink">${Math.round(cur.temperature_2m)}°<span class="text-xl align-top">${units.temperature_2m || 'C'}</span></div>
-                        <div class="text-slate text-sm mt-1">${desc}</div>
-                        <div class="text-xs text-slate mt-2">Feels like ${Math.round(cur.apparent_temperature)}°${units.apparent_temperature || 'C'}</div>
+                    <div class="glass-card p-6 md:col-span-1 flex flex-col items-center justify-center text-center">
+                        <div class="text-6xl mb-2">${emoji}</div>
+                        <div class="font-display font-bold text-5xl text-white">${Math.round(cur.temperature_2m)}°<span class="text-xl align-top">${units.temperature_2m || 'C'}</span></div>
+                        <div class="text-white/85 text-sm mt-1">${desc}</div>
+                        <div class="text-xs text-white/70 mt-2">Feels like ${Math.round(cur.apparent_temperature)}°${units.apparent_temperature || 'C'}</div>
                     </div>
                     <div class="md:col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-3">
-                        <div class="feature-card p-4 text-center">
-                            <div class="text-xs text-slate mb-1">Humidity</div>
-                            <div class="font-display font-bold text-lg text-ink">${cur.relative_humidity_2m}%</div>
+                        <div class="glass-card p-4 text-center">
+                            <div class="text-xs text-white/70 mb-1">Humidity</div>
+                            <div class="font-display font-bold text-lg text-white">${cur.relative_humidity_2m}%</div>
                         </div>
-                        <div class="feature-card p-4 text-center">
-                            <div class="text-xs text-slate mb-1">Cloud Cover</div>
-                            <div class="font-display font-bold text-lg text-ink">${cur.cloud_cover}%</div>
+                        <div class="glass-card p-4 text-center">
+                            <div class="text-xs text-white/70 mb-1">Cloud Cover</div>
+                            <div class="font-display font-bold text-lg text-white">${cur.cloud_cover}%</div>
                         </div>
-                        <div class="feature-card p-4 text-center">
-                            <div class="text-xs text-slate mb-1">Pressure</div>
-                            <div class="font-display font-bold text-lg text-ink">${Math.round(cur.pressure_msl)}<span class="text-xs font-normal"> hPa</span></div>
+                        <div class="glass-card p-4 text-center">
+                            <div class="text-xs text-white/70 mb-1">Pressure</div>
+                            <div class="font-display font-bold text-lg text-white">${Math.round(cur.pressure_msl)}<span class="text-xs font-normal"> hPa</span></div>
                         </div>
-                        <div class="feature-card p-4 text-center">
-                            <div class="text-xs text-slate mb-1">Precipitation</div>
-                            <div class="font-display font-bold text-lg text-ink">${cur.precipitation ?? 0}<span class="text-xs font-normal"> mm</span></div>
+                        <div class="glass-card p-4 text-center">
+                            <div class="text-xs text-white/70 mb-1">Precipitation</div>
+                            <div class="font-display font-bold text-lg text-white">${cur.precipitation ?? 0}<span class="text-xs font-normal"> mm</span></div>
                         </div>
-                        <div class="feature-card p-4 text-center">
-                            <div class="text-xs text-slate mb-1">UV Index (max)</div>
-                            <div class="font-display font-bold text-lg text-ink">${daily.uv_index_max ? Math.round(daily.uv_index_max[0]) : '—'}</div>
+                        <div class="glass-card p-4 text-center">
+                            <div class="text-xs text-white/70 mb-1">UV Index (max)</div>
+                            <div class="font-display font-bold text-lg text-white">${daily.uv_index_max ? Math.round(daily.uv_index_max[0]) : '—'}</div>
                         </div>
-                        <div class="feature-card p-4 text-center">
-                            <div class="text-xs text-slate mb-1">Sunrise</div>
-                            <div class="font-display font-bold text-sm text-ink">${daily.sunrise ? fmtTime(daily.sunrise[0]) : '—'}</div>
+                        <div class="glass-card p-4 text-center">
+                            <div class="text-xs text-white/70 mb-1">Sunrise</div>
+                            <div class="font-display font-bold text-sm text-white">${daily.sunrise ? fmtTime(daily.sunrise[0]) : '—'}</div>
                         </div>
-                        <div class="feature-card p-4 text-center">
-                            <div class="text-xs text-slate mb-1">Sunset</div>
-                            <div class="font-display font-bold text-sm text-ink">${daily.sunset ? fmtTime(daily.sunset[0]) : '—'}</div>
+                        <div class="glass-card p-4 text-center">
+                            <div class="text-xs text-white/70 mb-1">Sunset</div>
+                            <div class="font-display font-bold text-sm text-white">${daily.sunset ? fmtTime(daily.sunset[0]) : '—'}</div>
                         </div>
-                        <div class="feature-card p-4 text-center">
-                            <div class="text-xs text-slate mb-1">Today's Range</div>
-                            <div class="font-display font-bold text-sm text-ink">${daily.temperature_2m_min ? Math.round(daily.temperature_2m_min[0]) : '—'}° / ${daily.temperature_2m_max ? Math.round(daily.temperature_2m_max[0]) : '—'}°</div>
+                        <div class="glass-card p-4 text-center">
+                            <div class="text-xs text-white/70 mb-1">Today's Range</div>
+                            <div class="font-display font-bold text-sm text-white">${daily.temperature_2m_min ? Math.round(daily.temperature_2m_min[0]) : '—'}° / ${daily.temperature_2m_max ? Math.round(daily.temperature_2m_max[0]) : '—'}°</div>
                         </div>
                     </div>
                 </div>
 
                 <div class="mb-3">
-                    <div class="eyebrow mb-3">Wind at Different Heights — Right Now</div>
+                    <div class="glass-eyebrow mb-3">Wind at Different Heights — Right Now</div>
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">${windCardsHtml}</div>
                 </div>
 
                 <div class="mb-6 mt-8">
-                    <div class="eyebrow mb-3">Next 24 Hours</div>
+                    <div class="glass-eyebrow mb-3">Next 24 Hours</div>
                     <div class="hourly-scroll">${hourlyCardsHtml}</div>
                 </div>
 
-                <div class="feature-card p-5 mt-6">
+                <div class="bg-white rounded-2xl shadow-xl p-5 mt-8">
                     <div class="eyebrow mb-4">Hourly Wind Speed by Height (next 24h)</div>
                     <canvas id="wWindChart" height="90"></canvas>
                 </div>
