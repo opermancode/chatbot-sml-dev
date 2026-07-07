@@ -152,4 +152,39 @@ def get_session(session_id):
     return row
 
 
+def total_message_count():
+    conn = get_connection()
+    cursor = conn.execute("SELECT COUNT(*) AS c FROM chat_messages")
+    row = cursor.fetchone()
+    conn.close()
+    return row['c'] if row else 0
+
+
+def today_message_count():
+    conn = get_connection()
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    cursor = conn.execute(
+        "SELECT COUNT(*) AS c FROM chat_messages WHERE created_at LIKE ?",
+        (f"{today}%",)
+    )
+    row = cursor.fetchone()
+    conn.close()
+    return row['c'] if row else 0
+
+
+def recent_messages(limit=10):
+    conn = get_connection()
+    cursor = conn.execute(
+        "SELECT m.id, m.session_id, m.direction, m.message, m.response, "
+        "m.message_type, m.created_at, s.phone, s.user_name "
+        "FROM chat_messages m "
+        "JOIN chat_sessions s ON s.id = m.session_id "
+        "ORDER BY m.created_at DESC LIMIT ?",
+        (limit,)
+    )
+    rows = cursor.fetchall()
+    conn.close()
+    return rows
+
+
 init_db()
