@@ -785,10 +785,10 @@
 
         function fmtHour(iso) {
             const d = new Date(iso);
-            let h = d.getHours();
+            let h = d.getHours(), m = d.getMinutes();
             const ampm = h >= 12 ? 'PM' : 'AM';
             h = h % 12; if (h === 0) h = 12;
-            return `${h} ${ampm}`;
+            return m === 0 ? `${h} ${ampm}` : `${h}:${String(m).padStart(2, '0')} ${ampm}`;
         }
 
         function fmtTime(iso) {
