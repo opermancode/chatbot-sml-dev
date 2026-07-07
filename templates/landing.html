@@ -1057,7 +1057,8 @@
                 const params = new URLSearchParams({
                     latitude: currentLat, longitude: currentLon,
                     hourly: ['temperature_2m','precipitation_probability','precipitation','weather_code',
-                             'wind_speed_10m','wind_speed_80m','wind_speed_120m','wind_speed_180m'].join(','),
+                             'wind_speed_10m','wind_speed_80m','wind_speed_120m','wind_speed_180m',
+                             'wind_direction_10m','wind_direction_80m','wind_direction_120m','wind_direction_180m'].join(','),
                     timezone: 'auto',
                     start_date: date, end_date: date,
                     temporal_resolution: 'minutely_30',
@@ -1082,6 +1083,10 @@
             const w80 = hourly.wind_speed_80m || [];
             const w120 = hourly.wind_speed_120m || [];
             const w180 = hourly.wind_speed_180m || [];
+            const d10 = hourly.wind_direction_10m || [];
+            const d80 = hourly.wind_direction_80m || [];
+            const d120 = hourly.wind_direction_120m || [];
+            const d180 = hourly.wind_direction_180m || [];
 
             const d = new Date(date + 'T12:00:00');
             const dateDisplay = d.toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' });
@@ -1093,16 +1098,20 @@
                 const rain = rains[i] != null ? rains[i] + '%' : '—';
                 const code = codes[i] != null ? codes[i] : -1;
                 const emoji = WEATHER_CODES[code] ? WEATHER_CODES[code][1] : '❓';
-                const wh = [w10, w80, w120, w180].map(arr => arr[i] != null ? Math.round(arr[i]) : '—');
+                const wd = (speed, dir) => {
+                    const s = speed != null ? Math.round(speed) : '—';
+                    const d = dir != null ? ` ${windDirLabel(dir)}` : '';
+                    return s + d;
+                };
                 rows += `<tr class="border-b border-white/10 text-xs">
                     <td class="py-1.5 pr-2 text-white/90 font-medium whitespace-nowrap">${t}</td>
                     <td class="py-1.5 pr-2 text-center">${emoji}</td>
                     <td class="py-1.5 pr-2 text-center text-white font-medium">${temp}</td>
                     <td class="py-1.5 pr-2 text-center text-[#BFE3FF]">${rain}</td>
-                    <td class="py-1.5 pr-2 text-center">${wh[0]}</td>
-                    <td class="py-1.5 pr-2 text-center">${wh[1]}</td>
-                    <td class="py-1.5 pr-2 text-center">${wh[2]}</td>
-                    <td class="py-1.5 text-center">${wh[3]}</td>
+                    <td class="py-1.5 pr-2 text-center font-mono text-[#A8E6C3]">${wd(w10[i], d10[i])}</td>
+                    <td class="py-1.5 pr-2 text-center font-mono text-[#FFE39B]">${wd(w80[i], d80[i])}</td>
+                    <td class="py-1.5 pr-2 text-center font-mono text-[#B7D4FF]">${wd(w120[i], d120[i])}</td>
+                    <td class="py-1.5 text-center font-mono text-[#E3C6FF]">${wd(w180[i], d180[i])}</td>
                 </tr>`;
             }
 
@@ -1112,7 +1121,7 @@
                         <span>📅</span>
                         <span>Forecast for <strong>${dateDisplay}</strong> — ${currentLabel}</span>
                     </div>
-                    <div class="text-xs text-white/50 mb-2">Wind speeds in km/h · 30-min resolution</div>
+                    <div class="text-xs text-white/50 mb-2">Wind: speed (km/h) + direction · 30-min resolution</div>
                     <table class="w-full text-left whitespace-nowrap" style="min-width:520px;">
                         <thead>
                             <tr class="text-xs text-white/60 border-b border-white/20">
@@ -1120,10 +1129,10 @@
                                 <th class="py-2 pr-2 font-medium text-center"></th>
                                 <th class="py-2 pr-2 font-medium text-center">Temp</th>
                                 <th class="py-2 pr-2 font-medium text-center">Rain</th>
-                                <th class="py-2 pr-2 font-medium text-center" title="10m">10m</th>
-                                <th class="py-2 pr-2 font-medium text-center" title="80m">80m</th>
-                                <th class="py-2 pr-2 font-medium text-center" title="120m">120m</th>
-                                <th class="py-2 font-medium text-center" title="180m">180m</th>
+                                <th class="py-2 pr-2 font-medium text-center text-[#A8E6C3]" title="10m with direction">10m</th>
+                                <th class="py-2 pr-2 font-medium text-center text-[#FFE39B]" title="80m with direction">80m</th>
+                                <th class="py-2 pr-2 font-medium text-center text-[#B7D4FF]" title="120m with direction">120m</th>
+                                <th class="py-2 font-medium text-center text-[#E3C6FF]" title="180m with direction">180m</th>
                             </tr>
                         </thead>
                         <tbody>${rows}</tbody>
