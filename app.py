@@ -16,7 +16,8 @@ from models import db, AdminUser, User, Group, ChatLog, Setting
 from twilio.twiml.messaging_response import MessagingResponse
 from services.chatbot import handle_incoming, handle_location, log_chat
 from services.weather_service import get_weather, format_weather_forecast
-from services.twilio_service import send_whatsapp
+from services.twilio_service import send_whatsapp as twilio_send
+from services.meta_service import send_whatsapp as meta_send
 
 _basedir = os.path.abspath(os.path.dirname(__file__))
 app = Flask(__name__, instance_path=os.path.join(_basedir, "instance"))
@@ -73,9 +74,11 @@ def send_provider(to, body):
         sid = get_app_setting("twilio_account_sid", "TWILIO_ACCOUNT_SID")
         token = get_app_setting("twilio_auth_token", "TWILIO_AUTH_TOKEN")
         num = get_app_setting("twilio_whatsapp_number", "TWILIO_WHATSAPP_NUMBER")
-        return send_whatsapp(to, body, sid, token, num)
+        return twilio_send(to, body, sid, token, num)
     elif provider == "meta":
-        raise NotImplementedError("Meta provider not implemented yet")
+        token = get_app_setting("meta_whatsapp_token", "META_WHATSAPP_TOKEN")
+        pid = get_app_setting("meta_phone_number_id", "META_PHONE_NUMBER_ID")
+        return meta_send(to, body, token, pid)
     else:
         raise ValueError(f"Unknown provider: {provider}")
 
@@ -388,8 +391,17 @@ def admin_settings():
 # ─── Twilio Webhook ───────────────────────────────────────────────────────
 
 
-@app.route("/webhook/whatsapp", methods=["POST"])
+@app.route("/webhook/whatsapp", methods=["GET", "POST"])
 def webhook_whatsapp():
+    # Meta webhook verification
+    if request.method == "GET":
+        mode = request.args.get("hub.mode")
+        token = request.args.get("hub.verify_token")
+        challenge = request.args.get("hub.challenge")
+        expected = get_setting("meta_verify_token", Config.META_VERIFY_TOKEN)
+        if mode == "subscribe" and token and token == expected:
+            return challenge, 200
+        return "Verification failed", 403
     import sys
 
     phone = request.form.get("From", "").replace("whatsapp:", "").strip()
