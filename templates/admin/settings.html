@@ -102,9 +102,13 @@
                 <span class="text-slate">Meta Token</span>
                 <span class="font-mono text-xs">{{ '********' if settings.get('meta_whatsapp_token', env.META_WHATSAPP_TOKEN) else 'Not set' }}</span>
             </div>
-            <div class="flex justify-between py-2.5">
+            <div class="flex justify-between py-2.5 border-b border-line">
                 <span class="text-slate">Meta Phone ID</span>
                 <span class="font-mono text-xs">{{ settings.get('meta_phone_number_id', env.META_PHONE_NUMBER_ID) or 'Not set' }}</span>
+            </div>
+            <div class="flex justify-between py-2.5">
+                <span class="text-slate">Meta Verify Token</span>
+                <span class="font-mono text-xs">{{ '********' if settings.get('meta_verify_token', env.META_VERIFY_TOKEN) else 'Not set' }}</span>
             </div>
         </div>
     </div>
@@ -113,12 +117,48 @@
 <!-- Webhook Info -->
 <div class="mt-5 panel p-6">
     <div class="eyebrow mb-3">Webhook URL</div>
-    <p class="text-slate text-sm mb-3">Configure this URL in your Twilio WhatsApp Sandbox or Meta Webhook settings:</p>
+    <p class="text-slate text-sm mb-3">Configure this URL in your provider's webhook settings:</p>
     <code class="block px-4 py-3 bg-paper2 rounded border border-line text-sm font-mono break-all">
         {{ request.host_url }}webhook/whatsapp
     </code>
-    <p class="text-xs text-slate mt-2">Make sure this URL is publicly accessible (use ngrok for local testing).</p>
+
+    <div class="mt-4 pt-4 border-t border-line">
+        <div id="twilioWebhookInfo" class="text-sm {% if settings.get('whatsapp_provider','twilio') != 'twilio' %}hidden{% endif %}">
+            <p class="text-slate font-medium mb-2">Twilio Setup</p>
+            <ol class="text-xs text-slate space-y-1.5 list-decimal pl-4">
+                <li>Go to <a href="https://console.twilio.com" class="text-forest underline" target="_blank">Twilio Console</a> → Messaging → Try it out → Send a WhatsApp message</li>
+                <li>Under <strong>Sandbox</strong>, paste the URL above in <strong>"When a message comes in"</strong></li>
+                <li>Set method to <strong>HTTP POST</strong></li>
+            </ol>
+        </div>
+        <div id="metaWebhookInfo" class="text-sm {% if settings.get('whatsapp_provider','twilio') != 'meta' %}hidden{% endif %}">
+            <p class="text-slate font-medium mb-2">Meta Cloud API Setup</p>
+            <ol class="text-xs text-slate space-y-1.5 list-decimal pl-4">
+                <li>Go to <a href="https://developers.facebook.com" class="text-forest underline" target="_blank">Meta Developers</a> → Your App → WhatsApp → Configuration</li>
+                <li>Paste the URL above in <strong>Callback URL</strong></li>
+                <li>Set <strong>Verify Token</strong> to the value entered in the <strong>Meta Verify Token</strong> field above</li>
+                <li>Subscribe to the <strong>messages</strong> webhook field</li>
+            </ol>
+        </div>
+    </div>
+
+    <p class="text-xs text-slate mt-3">Make sure this URL is publicly accessible (use ngrok for local testing).</p>
 </div>
+
+<script>
+// Show/hide provider-specific webhook info on provider change
+document.querySelector('[name="setting_whatsapp_provider"]')?.addEventListener('change', function() {
+    var twilioInfo = document.getElementById('twilioWebhookInfo');
+    var metaInfo = document.getElementById('metaWebhookInfo');
+    if (this.value === 'meta') {
+        twilioInfo.classList.add('hidden');
+        metaInfo.classList.remove('hidden');
+    } else {
+        twilioInfo.classList.remove('hidden');
+        metaInfo.classList.add('hidden');
+    }
+});
+</script>
 
 <script>
 document.querySelectorAll('.toggle-pw').forEach(function(cb) {
