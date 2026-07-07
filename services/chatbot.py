@@ -189,6 +189,17 @@ def log_chat(phone, message, response, direction,
     db.session.add(chat)
     db.session.commit()
 
+    user_name = ""
+    if user_id:
+        user = User.query.get(user_id)
+        if user:
+            user_name = user.name
+    try:
+        from services.chatlog_db import log_message
+        log_message(phone, message, response, direction, message_type, user_name=user_name)
+    except Exception:
+        pass
+
 
 def geocode_city(city_name):
     try:
