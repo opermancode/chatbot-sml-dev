@@ -838,6 +838,8 @@
                         'cloud_cover', 'visibility', 'wind_speed_10m', 'wind_speed_80m',
                         'wind_speed_120m', 'wind_speed_180m', 'wind_gusts_10m', 'uv_index',
                     ].join(','),
+                    temporal_resolution: 'minutely_30',
+
                     daily: [
                         'weather_code', 'temperature_2m_max', 'temperature_2m_min', 'sunrise', 'sunset',
                         'uv_index_max', 'precipitation_sum', 'precipitation_probability_max',
@@ -888,7 +890,7 @@
                 startIdx = hourly.time.findIndex(t => new Date(t).getTime() >= nowMs);
                 if (startIdx < 0) startIdx = 0;
             }
-            const hSlice = (arr) => (arr || []).slice(startIdx, startIdx + 24);
+            const hSlice = (arr) => (arr || []).slice(startIdx, startIdx + 48);
             const hTime = hSlice(hourly.time);
             const hTemp = hSlice(hourly.temperature_2m);
             const hPrecip = hSlice(hourly.precipitation_probability);
@@ -974,7 +976,7 @@
 
                 <div class="bg-white rounded-2xl shadow-xl p-5 mt-8">
                     <div class="eyebrow mb-4">Hourly Wind Speed by Height (next 24h)</div>
-                    <canvas id="wWindChart" height="90"></canvas>
+                    <div style="position:relative;height:200px;"><canvas id="wWindChart"></canvas></div>
                 </div>
             `;
 
