@@ -77,10 +77,10 @@
             <tbody>
                 {% for chat in recent_chats %}
                 <tr>
-                    <td class="p-2 font-mono text-xs">{{ chat.phone }}</td>
-                    <td class="p-2 max-w-xs truncate">{{ chat.message }}</td>
-                    <td class="p-2 max-w-xs truncate text-slate">{{ chat.response[:50] }}...</td>
-                    <td class="p-2 text-slate text-xs font-mono">{{ chat.created_at.strftime('%d/%m %H:%M') }}</td>
+                    <td class="p-2 font-mono text-xs">{{ chat['phone'] }}</td>
+                    <td class="p-2 max-w-xs truncate">{{ chat['message'] }}</td>
+                    <td class="p-2 max-w-xs truncate text-slate">{{ chat['response'][:50] }}...</td>
+                    <td class="p-2 text-slate text-xs font-mono">{{ chat['created_at'][:16].replace('T', ' ') }}</td>
                 </tr>
                 {% else %}
                 <tr><td colspan="4" class="p-8 text-center text-slate text-sm">No chats yet</td></tr>
