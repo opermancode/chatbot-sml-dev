@@ -121,15 +121,14 @@ def admin_logout():
 @admin_required
 def admin_dashboard():
     total_users = User.query.count()
-    total_chats = ChatLog.query.count()
-    today_chats = ChatLog.query.filter(
-        db.func.date(ChatLog.created_at) == datetime.utcnow().date()
-    ).count()
     total_groups = Group.query.count()
-    recent_chats = (
-        ChatLog.query.order_by(ChatLog.created_at.desc()).limit(10).all()
-    )
     provider = get_setting("whatsapp_provider", "twilio")
+
+    from services.chatlog_db import total_message_count, today_message_count, recent_messages
+    total_chats = total_message_count()
+    today_chats = today_message_count()
+    recent_chats = recent_messages(10)
+
     return render_template(
         "admin/dashboard.html",
         total_users=total_users,
