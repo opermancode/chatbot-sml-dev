@@ -309,45 +309,26 @@ def admin_broadcast():
 @app.route("/admin/chats")
 @admin_required
 def admin_chats():
-    user_id = request.args.get("user_id", type=int)
+    session_id = request.args.get("session_id", type=int)
     search = request.args.get("search", "").strip()
 
-    query = User.query
-    if search:
-        query = query.filter(
-            db.or_(User.name.ilike(f"%{search}%"), User.phone.ilike(f"%{search}%"))
-        )
+    from services.chatlog_db import get_all_sessions, get_session, get_session_messages
 
-    users = query.order_by(User.name).all()
+    sessions = get_all_sessions(search)
 
-    chats = []
-    selected_user = None
-    chat_start = None
-    chat_end = None
-    if user_id:
-        selected_user = User.query.get(user_id)
-        if selected_user:
-            chats = ChatLog.query.filter_by(phone=selected_user.phone)\
-                .order_by(ChatLog.created_at.asc()).all()
-            if chats:
-                chat_start = chats[0].created_at
-                chat_end = chats[-1].created_at
-
-    user_last = {}
-    for u in users:
-        last = ChatLog.query.filter_by(phone=u.phone)\
-            .order_by(ChatLog.created_at.desc()).first()
-        user_last[u.id] = last
+    messages = []
+    selected_session = None
+    if session_id:
+        selected_session = get_session(session_id)
+        if selected_session:
+            messages = get_session_messages(session_id)
 
     return render_template(
         "admin/chats.html",
-        users=users,
-        chats=chats,
-        selected_user=selected_user,
-        user_last=user_last,
+        sessions=sessions,
+        messages=messages,
+        selected_session=selected_session,
         search=search,
-        chat_start=chat_start,
-        chat_end=chat_end,
         enumerate=enumerate,
     )
 
