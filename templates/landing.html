@@ -1103,36 +1103,36 @@
                     const d = dir != null ? ` ${windDirLabel(dir)}` : '';
                     return s + d;
                 };
-                rows += `<tr class="border-b border-white/10 text-xs">
-                    <td class="py-1.5 pr-2 text-white/90 font-medium whitespace-nowrap">${t}</td>
+                rows += `<tr class="border-b border-line text-xs">
+                    <td class="py-1.5 pr-2 text-ink font-medium whitespace-nowrap">${t}</td>
                     <td class="py-1.5 pr-2 text-center">${emoji}</td>
-                    <td class="py-1.5 pr-2 text-center text-white font-medium">${temp}</td>
-                    <td class="py-1.5 pr-2 text-center text-[#BFE3FF]">${rain}</td>
-                    <td class="py-1.5 pr-2 text-center font-mono text-[#A8E6C3]">${wd(w10[i], d10[i])}</td>
-                    <td class="py-1.5 pr-2 text-center font-mono text-[#FFE39B]">${wd(w80[i], d80[i])}</td>
-                    <td class="py-1.5 pr-2 text-center font-mono text-[#B7D4FF]">${wd(w120[i], d120[i])}</td>
-                    <td class="py-1.5 text-center font-mono text-[#E3C6FF]">${wd(w180[i], d180[i])}</td>
+                    <td class="py-1.5 pr-2 text-center text-ink font-medium">${temp}</td>
+                    <td class="py-1.5 pr-2 text-center text-slate">${rain}</td>
+                    <td class="py-1.5 pr-2 text-center font-mono text-[#1F7A4D]">${wd(w10[i], d10[i])}</td>
+                    <td class="py-1.5 pr-2 text-center font-mono text-[#C67F1F]">${wd(w80[i], d80[i])}</td>
+                    <td class="py-1.5 pr-2 text-center font-mono text-[#2563EB]">${wd(w120[i], d120[i])}</td>
+                    <td class="py-1.5 text-center font-mono text-[#7C3AED]">${wd(w180[i], d180[i])}</td>
                 </tr>`;
             }
 
             forecastWidget.innerHTML = `
-                <div class="glass-card p-5 overflow-x-auto">
-                    <div class="text-white font-medium mb-3 flex items-center gap-2">
+                <div class="bg-white rounded-2xl shadow-xl p-5 overflow-x-auto">
+                    <div class="text-ink font-semibold mb-3 flex items-center gap-2 text-sm">
                         <span>📅</span>
                         <span>Forecast for <strong>${dateDisplay}</strong> — ${currentLabel}</span>
                     </div>
-                    <div class="text-xs text-white/50 mb-2">Wind: speed (km/h) + direction · 30-min resolution</div>
+                    <div class="text-xs text-slate mb-2">Wind: speed (km/h) + direction · 30-min resolution</div>
                     <table class="w-full text-left whitespace-nowrap" style="min-width:520px;">
                         <thead>
-                            <tr class="text-xs text-white/60 border-b border-white/20">
+                            <tr class="text-xs text-slate border-b border-line">
                                 <th class="py-2 pr-2 font-medium text-left">Time</th>
                                 <th class="py-2 pr-2 font-medium text-center"></th>
                                 <th class="py-2 pr-2 font-medium text-center">Temp</th>
                                 <th class="py-2 pr-2 font-medium text-center">Rain</th>
-                                <th class="py-2 pr-2 font-medium text-center text-[#A8E6C3]" title="10m with direction">10m</th>
-                                <th class="py-2 pr-2 font-medium text-center text-[#FFE39B]" title="80m with direction">80m</th>
-                                <th class="py-2 pr-2 font-medium text-center text-[#B7D4FF]" title="120m with direction">120m</th>
-                                <th class="py-2 font-medium text-center text-[#E3C6FF]" title="180m with direction">180m</th>
+                                <th class="py-2 pr-2 font-medium text-center text-[#1F7A4D]" title="10m with direction">10m</th>
+                                <th class="py-2 pr-2 font-medium text-center text-[#C67F1F]" title="80m with direction">80m</th>
+                                <th class="py-2 pr-2 font-medium text-center text-[#2563EB]" title="120m with direction">120m</th>
+                                <th class="py-2 font-medium text-center text-[#7C3AED]" title="180m with direction">180m</th>
                             </tr>
                         </thead>
                         <tbody>${rows}</tbody>
