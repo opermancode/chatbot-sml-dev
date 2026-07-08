@@ -74,6 +74,34 @@
                 </label>
             </div>
 
+            <h3 class="font-display font-semibold text-sm text-purple-700 pt-2 pb-2 border-b border-line flex items-center gap-2 mt-5">
+                <span class="w-2 h-2 rounded-full bg-purple-500"></span>Broadcast Template (required for Meta)
+            </h3>
+            <p class="text-xs text-slate mt-2 mb-3">
+                Meta requires a pre-approved <strong>message template</strong> for broadcasts.
+                Create one in the Meta Business Manager, then enter its name below.
+                The template must have a <code class="font-mono">{{1}}</code> placeholder that will be replaced with your message text.
+            </p>
+            <div class="mb-3">
+                <label class="field-label">Template Name</label>
+                <input type="text" name="setting_meta_template_name"
+                    value="{{ settings.get('meta_template_name', '') }}"
+                    placeholder="e.g. weather_broadcast"
+                    class="field-input font-mono text-sm">
+            </div>
+            <div class="mb-5">
+                <label class="field-label">Template Language</label>
+                <select name="setting_meta_template_lang" class="field-input">
+                    <option value="en" {% if settings.get('meta_template_lang', 'en') == 'en' %}selected{% endif %}>English</option>
+                    <option value="hi" {% if settings.get('meta_template_lang') == 'hi' %}selected{% endif %}>Hindi</option>
+                    <option value="mr" {% if settings.get('meta_template_lang') == 'mr' %}selected{% endif %}>Marathi</option>
+                    <option value="bn" {% if settings.get('meta_template_lang') == 'bn' %}selected{% endif %}>Bengali</option>
+                    <option value="ta" {% if settings.get('meta_template_lang') == 'ta' %}selected{% endif %}>Tamil</option>
+                    <option value="te" {% if settings.get('meta_template_lang') == 'te' %}selected{% endif %}>Telugu</option>
+                    <option value="gu" {% if settings.get('meta_template_lang') == 'gu' %}selected{% endif %}>Gujarati</option>
+                </select>
+            </div>
+
             <button type="submit" class="btn btn-primary w-full">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
                 Save All Settings
