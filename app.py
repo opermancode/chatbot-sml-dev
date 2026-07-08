@@ -376,12 +376,17 @@ def _parse_twilio():
     phone = request.form.get("From", "").replace("whatsapp:", "").strip()
     if phone and not phone.startswith("+"):
         phone = "+" + phone
+    num_media_raw = request.form.get("NumMedia", "0")
+    try:
+        num_media = int(num_media_raw)
+    except (ValueError, TypeError):
+        num_media = 0
     return {
         "phone": phone,
         "body": request.form.get("Body", ""),
         "lat": request.form.get("Latitude"),
         "lon": request.form.get("Longitude"),
-        "num_media": int(request.form.get("NumMedia", 0)),
+        "num_media": num_media,
     }
 
 
@@ -390,8 +395,10 @@ def _parse_meta():
     entry = data.get("entry", [])
     if not entry:
         return None
-    change = entry[0].get("changes", [{}])[0]
-    value = change.get("value", {})
+    changes = entry[0].get("changes", [])
+    if not changes:
+        return None
+    value = changes[0].get("value", {})
     messages = value.get("messages", [])
     if not messages:
         return None
