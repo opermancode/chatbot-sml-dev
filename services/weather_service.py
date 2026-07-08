@@ -307,9 +307,12 @@ def format_weather_forecast(data: dict) -> str:
 
     for i in range(len(dates)):
         day_desc = weather_code_desc(codes[i]) if i < len(codes) else ""
+        min_t = min_temps[i] if i < len(min_temps) else "?"
+        max_t = max_temps[i] if i < len(max_temps) else "?"
+        p = precip[i] if i < len(precip) else "?"
         lines.append(
-            f"  {dates[i]}: {min_temps[i]}-{max_temps[i]}°C, "
-            f"{precip[i]}mm rain, {day_desc}"
+            f"  {dates[i]}: {min_t}-{max_t}°C, "
+            f"{p}mm rain, {day_desc}"
         )
 
     lines.append("")
