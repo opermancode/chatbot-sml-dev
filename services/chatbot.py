@@ -1,4 +1,5 @@
 import re
+import threading
 import requests
 from datetime import datetime, timedelta, timezone
 from models import db, User, ChatLog, Setting
@@ -17,6 +18,24 @@ from services.weather_service import (
 GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search"
 
 user_state = {}
+_state_lock = threading.Lock()
+
+
+def _get_state(key, default=None):
+    with _state_lock:
+        return user_state.get(key, default)
+
+
+def _set_state(key, value):
+    with _state_lock:
+        user_state[key] = value
+
+
+def _clear_state(phone):
+    with _state_lock:
+        keys = [k for k in user_state if k == phone or k.startswith(f"{phone}_")]
+        for k in keys:
+            del user_state[k]
 
 WIND_HEIGHT_BY_NUMBER = {
     "1": "10m",
@@ -177,7 +196,12 @@ def parse_date(text):
 
 
 def get_or_create_user(phone):
-    return User.query.filter_by(phone=phone).first()
+    user = User.query.filter_by(phone=phone).first()
+    if not user:
+        user = User(name=phone, phone=phone, is_active=True)
+        db.session.add(user)
+        db.session.commit()
+    return user
 
 
 def log_chat(phone, message, response, direction,
@@ -278,11 +302,11 @@ def handle_incoming(phone, message):
         return None
 
     msg = message.strip().lower()
-    state = user_state.get(phone, "menu")
+    state = _get_state(phone, "menu")
     lang = get_user_language(phone)
 
     if msg in ("language", "lang", "change language", "भाषा"):
-        user_state[phone] = "awaiting_language"
+        _set_state(phone, "awaiting_language")
         resp = language_menu()
         log_chat(phone, message, resp, "outgoing", message_type="language", user_id=user_id)
         return resp
@@ -295,7 +319,7 @@ def handle_incoming(phone, message):
             return resp
         save_user_language(phone, selected)
         lang = get_user_language(phone)
-        user_state[phone] = "menu"
+        _set_state(phone, "menu")
         resp = (
             f"✅ *{t(lang, 'language_saved')}:* {LANGUAGE_NAMES.get(selected, selected)}\n\n"
             f"{welcome_msg(user, lang)}"
@@ -305,7 +329,8 @@ def handle_incoming(phone, message):
 
     # Back to main menu
     if msg in ("0", "menu", "main menu"):
-        user_state[phone] = "menu"
+        _clear_state(phone)
+        _set_state(phone, "menu")
         resp = welcome_msg(user, lang)
         log_chat(phone, message, resp, "outgoing", user_id=user_id)
         return resp
@@ -313,17 +338,17 @@ def handle_incoming(phone, message):
     # Hi / start
     if msg in ("hi", "hello", "hey", "start"):
         if not has_user_language(phone):
-            user_state[phone] = "awaiting_language"
+            _set_state(phone, "awaiting_language")
             resp = language_menu()
             log_chat(phone, message, resp, "outgoing", message_type="language", user_id=user_id)
             return resp
-        user_state[phone] = "menu"
+        _set_state(phone, "menu")
         resp = welcome_msg(user, lang)
         log_chat(phone, message, resp, "outgoing", user_id=user_id)
         return resp
 
     if not has_user_language(phone):
-        user_state[phone] = "awaiting_language"
+        _set_state(phone, "awaiting_language")
         resp = language_menu()
         log_chat(phone, message, resp, "outgoing", message_type="language", user_id=user_id)
         return resp
@@ -335,15 +360,17 @@ def handle_incoming(phone, message):
             log_chat(phone, message, resp, "outgoing", message_type="wind_height", user_id=user_id)
             return resp
 
-        lat = user_state.get(phone + "_lat")
-        lon = user_state.get(phone + "_lon")
+        lat = _get_state(phone + "_lat")
+        lon = _get_state(phone + "_lon")
         if lat is None or lon is None:
-            user_state[phone] = "menu"
+            _clear_state(phone)
+            _set_state(phone, "menu")
             resp = t(lang, "something_wrong")
             log_chat(phone, message, resp, "outgoing", user_id=user_id)
             return resp
 
-        user_state[phone] = "menu"
+        _clear_state(phone)
+        _set_state(phone, "menu")
         weather = weather_for_coords(lat, lon, lang=lang, wind_height=wind_height)
         resp = weather + "\n\n" + t(lang, "reply_main")
         log_chat(phone, message, resp, "outgoing",
@@ -358,17 +385,19 @@ def handle_incoming(phone, message):
             log_chat(phone, message, resp, "outgoing", message_type="wind_height", user_id=user_id)
             return resp
 
-        date_str = user_state.get(phone + "_fdate")
-        lat = user_state.get(phone + "_fc_lat")
-        lon = user_state.get(phone + "_fc_lon")
-        location_name = user_state.get(phone + "_fc_name", "Your Location")
+        date_str = _get_state(phone + "_fdate")
+        lat = _get_state(phone + "_fc_lat")
+        lon = _get_state(phone + "_fc_lon")
+        location_name = _get_state(phone + "_fc_name", "Your Location")
         if not date_str or lat is None or lon is None:
-            user_state[phone] = "menu"
+            _clear_state(phone)
+            _set_state(phone, "menu")
             resp = t(lang, "something_wrong")
             log_chat(phone, message, resp, "outgoing", user_id=user_id)
             return resp
 
-        user_state[phone] = "menu"
+        _clear_state(phone)
+        _set_state(phone, "menu")
         forecast = hourly_for_location(lat, lon, date_str, location_name, lang=lang, wind_height=wind_height)
         log_chat(phone, message, forecast, "outgoing",
                  message_type="forecast", user_id=user_id)
@@ -376,7 +405,8 @@ def handle_incoming(phone, message):
 
     # ─── Awaiting city name for current weather ────────────────────────
     if state == "awaiting_city":
-        user_state[phone] = "menu"
+        _clear_state(phone)
+        _set_state(phone, "menu")
         resp = weather_for_city(message.strip(), lang=lang)
         log_chat(phone, message, resp, "outgoing",
                  message_type="city_weather", user_id=user_id)
@@ -396,8 +426,8 @@ def handle_incoming(phone, message):
             return resp
 
         # Store date and ask for location
-        user_state[phone] = "awaiting_forecast_loc"
-        user_state[phone + "_fdate"] = date.strftime("%Y-%m-%d")
+        _set_state(phone, "awaiting_forecast_loc")
+        _set_state(phone + "_fdate", date.strftime("%Y-%m-%d"))
         resp = forecast_loc_menu(lang)
         log_chat(phone, message, resp, "outgoing", user_id=user_id)
         return resp
@@ -405,13 +435,13 @@ def handle_incoming(phone, message):
     # ─── Awaiting location choice for forecast ─────────────────────────
     if state == "awaiting_forecast_loc":
         if msg == "1":
-            user_state[phone] = "awaiting_forecast_coords"
+            _set_state(phone, "awaiting_forecast_coords")
             resp = location_prompt(lang)
             log_chat(phone, message, resp, "outgoing",
                      message_type="location_prompt", user_id=user_id)
             return resp
         if msg == "2":
-            user_state[phone] = "awaiting_forecast_city"
+            _set_state(phone, "awaiting_forecast_city")
             resp = city_prompt(lang)
             log_chat(phone, message, resp, "outgoing", user_id=user_id)
             return resp
@@ -421,9 +451,10 @@ def handle_incoming(phone, message):
 
     # ─── Awaiting city name for forecast ───────────────────────────────
     if state == "awaiting_forecast_city":
-        date_str = user_state.get(phone + "_fdate")
+        date_str = _get_state(phone + "_fdate")
         if not date_str:
-            user_state[phone] = "menu"
+            _clear_state(phone)
+            _set_state(phone, "menu")
             resp = t(lang, "something_wrong")
             log_chat(phone, message, resp, "outgoing", user_id=user_id)
             return resp
@@ -435,10 +466,10 @@ def handle_incoming(phone, message):
             log_chat(phone, message, resp, "outgoing", user_id=user_id)
             return resp
 
-        user_state[phone] = "awaiting_forecast_wind_height"
-        user_state[phone + "_fc_lat"] = geo["lat"]
-        user_state[phone + "_fc_lon"] = geo["lon"]
-        user_state[phone + "_fc_name"] = f"{geo['name']}, {geo['country']}"
+        _set_state(phone, "awaiting_forecast_wind_height")
+        _set_state(phone + "_fc_lat", geo["lat"])
+        _set_state(phone + "_fc_lon", geo["lon"])
+        _set_state(phone + "_fc_name", f"{geo['name']}, {geo['country']}")
         resp = wind_height_menu(lang)
         log_chat(phone, message, resp, "outgoing",
                  message_type="wind_height_prompt", user_id=user_id)
@@ -452,7 +483,7 @@ def handle_incoming(phone, message):
                      message_type="location_prompt", user_id=user_id)
             return resp
         if msg == "2":
-            user_state[phone] = "awaiting_city"
+            _set_state(phone, "awaiting_city")
             resp = city_prompt(lang)
             log_chat(phone, message, resp, "outgoing", user_id=user_id)
             return resp
@@ -462,19 +493,22 @@ def handle_incoming(phone, message):
 
     # ─── Main menu ─────────────────────────────────────────────────────
     if msg == "1":
-        user_state[phone] = "weather_menu"
+        _clear_state(phone)
+        _set_state(phone, "weather_menu")
         resp = current_weather_menu(lang)
         log_chat(phone, message, resp, "outgoing", user_id=user_id)
         return resp
 
     if msg == "2":
-        user_state[phone] = "awaiting_forecast_date"
+        _clear_state(phone)
+        _set_state(phone, "awaiting_forecast_date")
         resp = date_prompt(lang)
         log_chat(phone, message, resp, "outgoing", user_id=user_id)
         return resp
 
     if msg == "3":
-        user_state[phone] = "awaiting_language"
+        _clear_state(phone)
+        _set_state(phone, "awaiting_language")
         resp = language_menu()
         log_chat(phone, message, resp, "outgoing", message_type="language", user_id=user_id)
         return resp
@@ -490,25 +524,23 @@ def handle_location(phone, lat, lon):
     user_id = user.id if user else None
     lang = get_user_language(phone)
 
-    state = user_state.get(phone, "menu")
+    state = _get_state(phone, "menu")
 
-    # If waiting for forecast coordinates
     if state == "awaiting_forecast_coords":
-        date_str = user_state.get(phone + "_fdate")
+        date_str = _get_state(phone + "_fdate")
         if date_str:
-            user_state[phone] = "awaiting_forecast_wind_height"
-            user_state[phone + "_fc_lat"] = lat
-            user_state[phone + "_fc_lon"] = lon
-            user_state[phone + "_fc_name"] = "Your Location"
+            _set_state(phone, "awaiting_forecast_wind_height")
+            _set_state(phone + "_fc_lat", lat)
+            _set_state(phone + "_fc_lon", lon)
+            _set_state(phone + "_fc_name", "Your Location")
             resp = wind_height_menu(lang)
             log_chat(phone, f"Location shared: {lat},{lon}", resp,
                      "outgoing", message_type="wind_height_prompt", user_id=user_id)
             return resp
 
-    # Default: ask for wind height before current weather.
-    user_state[phone] = "awaiting_current_wind_height"
-    user_state[phone + "_lat"] = lat
-    user_state[phone + "_lon"] = lon
+    _set_state(phone, "awaiting_current_wind_height")
+    _set_state(phone + "_lat", lat)
+    _set_state(phone + "_lon", lon)
     resp = wind_height_menu(lang)
     log_chat(phone, f"Location shared: {lat},{lon}", resp,
              "outgoing", message_type="wind_height_prompt", user_id=user_id)
