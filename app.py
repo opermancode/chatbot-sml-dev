@@ -18,7 +18,7 @@ from twilio.twiml.messaging_response import MessagingResponse
 from services.chatbot import handle_incoming, handle_location, log_chat
 from services.weather_service import get_weather, format_weather_forecast
 from services.twilio_service import send_whatsapp as twilio_send
-from services.meta_service import send_whatsapp as meta_send
+from services.meta_service import send_whatsapp as meta_send, send_template as meta_send_template
 
 _basedir = os.path.abspath(os.path.dirname(__file__))
 app = Flask(__name__, instance_path=os.path.join(_basedir, "instance"))
@@ -69,7 +69,8 @@ def get_app_setting(key, env_fallback=""):
     return getattr(Config, env_fallback, "") if env_fallback else ""
 
 
-def send_provider(to, body):
+def send_provider(to, body, template_name=None, template_lang="en",
+                  template_params=None):
     provider = get_setting("whatsapp_provider", "twilio")
     if provider == "twilio":
         sid = get_app_setting("twilio_account_sid", "TWILIO_ACCOUNT_SID")
@@ -79,6 +80,11 @@ def send_provider(to, body):
     elif provider == "meta":
         token = get_app_setting("meta_whatsapp_token", "META_WHATSAPP_TOKEN")
         pid = get_app_setting("meta_phone_number_id", "META_PHONE_NUMBER_ID")
+        if template_name:
+            return meta_send_template(
+                to, template_name, template_lang, template_params,
+                token, pid,
+            )
         return meta_send(to, body, token, pid)
     else:
         raise ValueError(f"Unknown provider: {provider}")
@@ -264,6 +270,8 @@ def admin_groups_delete(group_id):
 @app.route("/admin/broadcast", methods=["GET", "POST"])
 @admin_required
 def admin_broadcast():
+    provider = get_setting("whatsapp_provider", "twilio")
+
     if request.method == "POST":
         group_id = request.form.get("group_id")
         message = request.form.get("message", "").strip()
@@ -280,10 +288,23 @@ def admin_broadcast():
             flash("No users found for broadcast", "error")
             return redirect(url_for("admin_broadcast"))
 
+        template_name = None
+        template_lang = "en"
+        template_params = None
+        if provider == "meta":
+            template_name = get_setting("meta_template_name", "")
+            template_lang = get_setting("meta_template_lang", "en")
+            template_params = [message]
+
         sent = 0
         for user in users:
             try:
-                send_provider(user.phone, message)
+                send_provider(
+                    user.phone, message,
+                    template_name=template_name,
+                    template_lang=template_lang,
+                    template_params=template_params,
+                )
                 log_chat(
                     phone=user.phone,
                     message=f"[BROADCAST] {message}",
@@ -300,7 +321,7 @@ def admin_broadcast():
         return redirect(url_for("admin_broadcast"))
 
     groups = Group.query.all()
-    return render_template("admin/broadcast.html", groups=groups)
+    return render_template("admin/broadcast.html", groups=groups, provider=provider)
 
 
 # ─── Chat Logs ────────────────────────────────────────────────────────────
