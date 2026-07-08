@@ -1,4 +1,5 @@
 import os
+import sys
 from datetime import datetime
 from functools import wraps
 
@@ -368,12 +369,64 @@ def admin_settings():
     )
 
 
-# ─── Twilio Webhook ───────────────────────────────────────────────────────
+# ─── Webhook (Twilio & Meta) ─────────────────────────────────────────────
+
+
+def _parse_twilio():
+    phone = request.form.get("From", "").replace("whatsapp:", "").strip()
+    if phone and not phone.startswith("+"):
+        phone = "+" + phone
+    return {
+        "phone": phone,
+        "body": request.form.get("Body", ""),
+        "lat": request.form.get("Latitude"),
+        "lon": request.form.get("Longitude"),
+        "num_media": int(request.form.get("NumMedia", 0)),
+    }
+
+
+def _parse_meta():
+    data = request.get_json(silent=True) or {}
+    entry = data.get("entry", [])
+    if not entry:
+        return None
+    change = entry[0].get("changes", [{}])[0]
+    value = change.get("value", {})
+    messages = value.get("messages", [])
+    if not messages:
+        return None
+    msg = messages[0]
+
+    msg_type = msg.get("type", "")
+    phone = msg.get("from", "")
+    if phone and not phone.startswith("+"):
+        phone = "+" + phone
+
+    body = ""
+    lat = None
+    lon = None
+    num_media = 0
+
+    if msg_type == "text":
+        body = msg.get("text", {}).get("body", "")
+    elif msg_type == "location":
+        loc = msg.get("location", {})
+        lat = loc.get("latitude")
+        lon = loc.get("longitude")
+    elif msg_type in ("image", "video", "document", "audio"):
+        num_media = 1
+
+    return {
+        "phone": phone,
+        "body": body,
+        "lat": lat,
+        "lon": lon,
+        "num_media": num_media,
+    }
 
 
 @app.route("/webhook/whatsapp", methods=["GET", "POST"])
 def webhook_whatsapp():
-    # Meta webhook verification
     if request.method == "GET":
         mode = request.args.get("hub.mode")
         token = request.args.get("hub.verify_token")
@@ -382,41 +435,50 @@ def webhook_whatsapp():
         if mode == "subscribe" and token and token == expected:
             return challenge, 200
         return "Verification failed", 403
-    import sys
 
-    phone = request.form.get("From", "").replace("whatsapp:", "").strip()
-    if phone and not phone.startswith("+"):
-        phone = "+" + phone
-    body = request.form.get("Body", "")
-    num_media = int(request.form.get("NumMedia", 0))
+    provider = get_setting("whatsapp_provider", "twilio")
 
-    lat = request.form.get("Latitude")
-    lon = request.form.get("Longitude")
+    if provider == "meta":
+        data = _parse_meta()
+    else:
+        data = _parse_twilio()
+
+    if data is None:
+        return "", 200
+
+    phone = data["phone"]
+    body = data["body"]
+    lat = data["lat"]
+    lon = data["lon"]
+    num_media = data["num_media"]
+
+    if not phone:
+        return "", 200
 
     print(f"[WEBHOOK] phone={phone!r} body={body!r} lat={lat!r} lon={lon!r} num_media={num_media}", file=sys.stderr, flush=True)
 
     if body.strip() == "test":
         response = f"Test reply at {datetime.now().strftime('%H:%M:%S')}. Your phone: {phone}"
-        print(f"[WEBHOOK] test response={response!r}", file=sys.stderr, flush=True)
     elif lat and lon:
         response = handle_location(phone, float(lat), float(lon))
-        print(f"[WEBHOOK] location response={response!r}", file=sys.stderr, flush=True)
     elif num_media > 0:
         response = "Thanks for sharing! For weather, please share your live location via the 📍 attachment button."
-        print(f"[WEBHOOK] media response={response!r}", file=sys.stderr, flush=True)
     else:
         response = handle_incoming(phone, body)
-        print(f"[WEBHOOK] incoming response={response!r}", file=sys.stderr, flush=True)
 
     if response is None:
         print(f"[WEBHOOK] response is None, returning empty 200", file=sys.stderr, flush=True)
         return "", 200
 
-    print(f"[WEBHOOK] response type={type(response).__name__} len={len(response)}", file=sys.stderr, flush=True)
+    print(f"[WEBHOOK] response len={len(response)}", file=sys.stderr, flush=True)
+
+    if provider == "meta":
+        send_provider(phone, response)
+        return "", 200
+
     twiml = MessagingResponse()
     twiml.message(response)
     twiml_str = str(twiml)
-    print(f"[WEBHOOK] twiml length={len(twiml_str)}", file=sys.stderr, flush=True)
     print(f"[WEBHOOK] twiml preview={twiml_str[:200]}", file=sys.stderr, flush=True)
     return twiml_str, 200, {"Content-Type": "text/xml"}
 
