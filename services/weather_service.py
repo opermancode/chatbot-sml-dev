@@ -195,7 +195,6 @@ def get_hourly_forecast(lat: float, lon: float, date: str):
         "start_date": date,
         "end_date": date,
         "timezone": "Asia/Kolkata",
-        "temporal_resolution": "minutely_30",
     }
     try:
         resp = requests.get(OPEN_METEO_URL, params=params, timeout=15)
