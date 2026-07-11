@@ -27,6 +27,7 @@ def get_weather(lat: float, lon: float):
             "wind_speed_80m", "wind_speed_120m", "wind_speed_180m",
         ],
         "timezone": "Asia/Kolkata",
+        "wind_speed_unit": "ms",
         "forecast_days": 16,
     }
     try:
@@ -82,15 +83,15 @@ def wind_dir_label(degrees):
 def wind_label(speed):
     if speed is None:
         return ""
-    if speed < 5:
+    if speed < 1.5:
         return "Calm"
-    if speed < 20:
+    if speed < 5.5:
         return "Light"
-    if speed < 30:
+    if speed < 8.5:
         return "Moderate"
-    if speed < 40:
+    if speed < 11:
         return "Strong"
-    if speed < 55:
+    if speed < 15.5:
         return "Very Strong"
     return "Gale ⚠️"
 
@@ -171,11 +172,11 @@ def format_current_weather(data: dict, lang="en", wind_height="10m") -> str:
     lines.append(f"*{t(lang, 'direction')}:* {wind_dir}° {dir_info}")
     lines.append(
         f"*{t(lang, 'selected_height')} ({wind_height}):* "
-        f"{selected_wind if selected_wind is not None else 'N/A'} km/h"
+        f"{selected_wind if selected_wind is not None else 'N/A'} m/s"
     )
-    lines.append(f"*{t(lang, 'ground')}:* {wind_10m} km/h - {wind_label(wind_10m)}")
+    lines.append(f"*{t(lang, 'ground')}:* {wind_10m} m/s - {wind_label(wind_10m)}")
     if gust is not None and gust > 0:
-        lines.append(f"*{t(lang, 'gusts_ground')}:* {gust} km/h")
+        lines.append(f"*{t(lang, 'gusts_ground')}:* {gust} m/s")
 
     lines.append("")
     return "\n".join(lines)
@@ -195,6 +196,7 @@ def get_hourly_forecast(lat: float, lon: float, date: str):
         "start_date": date,
         "end_date": date,
         "timezone": "Asia/Kolkata",
+        "wind_speed_unit": "ms",
     }
     try:
         resp = requests.get(OPEN_METEO_URL, params=params, timeout=15)
@@ -237,7 +239,7 @@ def format_hourly_forecast(data: dict, city_name="", date="", lang="en", wind_he
     lines.append(f"📆 {date_display}")
     lines.append("")
 
-    lines.append(f"Wind column: {wind_height}")
+    lines.append(f"Wind column: {wind_height} (m/s)")
     lines.append("```")
     lines.append("Time  Rain  Wind  Temp  Condition")
     lines.append("-----------------------------------")
@@ -294,7 +296,7 @@ def format_weather_forecast(data: dict) -> str:
         f"Condition: {desc}",
         f"Temperature: {temp}°C",
         f"Humidity: {humidity}%",
-        f"Wind Speed: {wind} km/h",
+        f"Wind Speed: {wind} m/s",
         "",
         "📅 *16-Day Forecast*",
     ]
