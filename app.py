@@ -535,12 +535,15 @@ def webhook_whatsapp():
     if provider == "meta":
         token = get_app_setting("meta_whatsapp_token", "META_WHATSAPP_TOKEN")
         pid = get_app_setting("meta_phone_number_id", "META_PHONE_NUMBER_ID")
-        buttons = _meta_buttons(response)
-        if buttons:
-            meta_send_interactive(phone, response, buttons,
-                                  footer_text="Sangreen Renewables", token=token, pid=pid)
-        else:
-            meta_send(phone, response, token, pid)
+        try:
+            buttons = _meta_buttons(response)
+            if buttons:
+                meta_send_interactive(phone, response, buttons,
+                                      footer_text="Sangreen Renewables", token=token, pid=pid)
+            else:
+                meta_send(phone, response, token, pid)
+        except Exception as e:
+            print(f"[WEBHOOK] Meta send error: {e}", file=sys.stderr, flush=True)
         return "", 200
 
     twiml = MessagingResponse()
