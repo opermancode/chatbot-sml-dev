@@ -1,8 +1,17 @@
 import sqlite3
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 _basedir = None
+IST = timezone(timedelta(hours=5, minutes=30))
+
+
+def _ist_now():
+    return datetime.now(IST)
+
+
+def _ist_date_str():
+    return _ist_now().strftime("%Y-%m-%d")
 
 
 def _get_basedir():
@@ -35,7 +44,8 @@ def init_db():
             last_activity TEXT NOT NULL,
             end_time TEXT,
             duration_seconds INTEGER DEFAULT 0,
-            message_count INTEGER DEFAULT 0
+            message_count INTEGER DEFAULT 0,
+            session_date TEXT NOT NULL DEFAULT ''
         );
         CREATE TABLE IF NOT EXISTS chat_messages (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -48,47 +58,56 @@ def init_db():
             FOREIGN KEY (session_id) REFERENCES chat_sessions(id)
         );
     """)
+    # Add session_date column if missing (migration for existing DBs)
+    try:
+        conn.execute("ALTER TABLE chat_sessions ADD COLUMN session_date TEXT NOT NULL DEFAULT ''")
+    except sqlite3.OperationalError:
+        pass
     conn.commit()
     conn.close()
 
 
 def get_or_create_session(phone, user_name=""):
     conn = get_connection()
-    now = datetime.now(timezone.utc).isoformat()
+    now_ist = _ist_now()
+    now_iso = now_ist.isoformat()
+    today = _ist_date_str()
 
     cursor = conn.execute(
-        "SELECT id, user_name FROM chat_sessions "
+        "SELECT id, user_name, session_date FROM chat_sessions "
         "WHERE phone = ? AND end_time IS NULL "
-        "AND datetime(last_activity) > datetime(?, '-30 minutes') "
         "ORDER BY last_activity DESC LIMIT 1",
-        (phone, now)
+        (phone,)
     )
     row = cursor.fetchone()
 
     if row:
         session_id = row['id']
         existing_name = row['user_name']
-        if user_name and user_name != existing_name:
-            conn.execute("UPDATE chat_sessions SET user_name = ? WHERE id = ?", (user_name, session_id))
-        conn.execute(
-            "UPDATE chat_sessions SET last_activity = ?, message_count = message_count + 1 WHERE id = ?",
-            (now, session_id)
-        )
-        conn.commit()
-        conn.close()
-        return session_id
+        sess_date = row['session_date'] or today
 
-    conn.execute(
-        "UPDATE chat_sessions SET end_time = ?, duration_seconds = "
-        "CAST(MAX(0, (julianday(?) - julianday(start_time)) * 86400) AS INTEGER) "
-        "WHERE phone = ? AND end_time IS NULL",
-        (now, now, phone)
-    )
+        if sess_date != today:
+            conn.execute(
+                "UPDATE chat_sessions SET end_time = ?, duration_seconds = "
+                "CAST(MAX(0, (julianday(?) - julianday(start_time)) * 86400) AS INTEGER) "
+                "WHERE id = ?",
+                (now_iso, now_iso, session_id)
+            )
+        else:
+            if user_name and user_name != existing_name:
+                conn.execute("UPDATE chat_sessions SET user_name = ? WHERE id = ?", (user_name, session_id))
+            conn.execute(
+                "UPDATE chat_sessions SET last_activity = ?, message_count = message_count + 1 WHERE id = ?",
+                (now_iso, session_id)
+            )
+            conn.commit()
+            conn.close()
+            return session_id
 
     cursor = conn.execute(
-        "INSERT INTO chat_sessions (user_name, phone, start_time, last_activity, message_count) "
-        "VALUES (?, ?, ?, ?, 1)",
-        (user_name, phone, now, now)
+        "INSERT INTO chat_sessions (user_name, phone, start_time, last_activity, message_count, session_date) "
+        "VALUES (?, ?, ?, ?, 1, ?)",
+        (user_name, phone, now_iso, now_iso, today)
     )
     session_id = cursor.lastrowid
     conn.commit()
@@ -98,12 +117,12 @@ def get_or_create_session(phone, user_name=""):
 
 def log_message(phone, message, response, direction, message_type="text", user_name=""):
     session_id = get_or_create_session(phone, user_name)
-    now = datetime.now(timezone.utc).isoformat()
+    now_iso = _ist_now().isoformat()
     conn = get_connection()
     conn.execute(
         "INSERT INTO chat_messages (session_id, direction, message, response, message_type, created_at) "
         "VALUES (?, ?, ?, ?, ?, ?)",
-        (session_id, direction, message, response, message_type, now)
+        (session_id, direction, message, response, message_type, now_iso)
     )
     conn.commit()
     conn.close()
@@ -113,14 +132,14 @@ def get_all_sessions(search=""):
     conn = get_connection()
     if search:
         cursor = conn.execute(
-            "SELECT id, user_name, phone, start_time, last_activity, end_time, duration_seconds, message_count "
+            "SELECT id, user_name, phone, start_time, last_activity, end_time, duration_seconds, message_count, session_date "
             "FROM chat_sessions WHERE user_name LIKE ? OR phone LIKE ? "
             "ORDER BY last_activity DESC",
             (f'%{search}%', f'%{search}%')
         )
     else:
         cursor = conn.execute(
-            "SELECT id, user_name, phone, start_time, last_activity, end_time, duration_seconds, message_count "
+            "SELECT id, user_name, phone, start_time, last_activity, end_time, duration_seconds, message_count, session_date "
             "FROM chat_sessions ORDER BY last_activity DESC"
         )
     rows = cursor.fetchall()
@@ -143,7 +162,7 @@ def get_session_messages(session_id):
 def get_session(session_id):
     conn = get_connection()
     cursor = conn.execute(
-        "SELECT id, user_name, phone, start_time, last_activity, end_time, duration_seconds, message_count "
+        "SELECT id, user_name, phone, start_time, last_activity, end_time, duration_seconds, message_count, session_date "
         "FROM chat_sessions WHERE id = ?",
         (session_id,)
     )
@@ -162,7 +181,7 @@ def total_message_count():
 
 def today_message_count():
     conn = get_connection()
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    today = _ist_date_str()
     cursor = conn.execute(
         "SELECT COUNT(*) AS c FROM chat_messages WHERE created_at LIKE ?",
         (f"{today}%",)
@@ -185,6 +204,36 @@ def recent_messages(limit=10):
     rows = cursor.fetchall()
     conn.close()
     return rows
+
+
+def format_ist_dt(iso_str):
+    if not iso_str:
+        return ""
+    try:
+        dt = datetime.fromisoformat(iso_str)
+        return dt.strftime("%d-%b-%Y %I:%M %p")
+    except Exception:
+        return iso_str
+
+
+def format_ist_date(iso_str):
+    if not iso_str:
+        return ""
+    try:
+        dt = datetime.fromisoformat(iso_str)
+        return dt.strftime("%d-%b-%Y")
+    except Exception:
+        return iso_str
+
+
+def format_ist_time(iso_str):
+    if not iso_str:
+        return ""
+    try:
+        dt = datetime.fromisoformat(iso_str)
+        return dt.strftime("%I:%M %p")
+    except Exception:
+        return iso_str
 
 
 init_db()
