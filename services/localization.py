@@ -24,8 +24,9 @@ LANGUAGES = [
     ("brx", "बड़ो"),
 ]
 
-LANGUAGE_BY_NUMBER = {str(i): code for i, (code, _) in enumerate(LANGUAGES, 1)}
-LANGUAGE_NAMES = dict(LANGUAGES)
+AVAILABLE_LANGUAGES = [(code, name) for code, name in LANGUAGES if code in TEXT]
+LANGUAGE_BY_NUMBER = {str(i): code for i, (code, _) in enumerate(AVAILABLE_LANGUAGES, 1)}
+LANGUAGE_NAMES = dict(AVAILABLE_LANGUAGES)
 
 
 TEXT = {
@@ -179,11 +180,11 @@ def t(lang, key):
 
 
 def language_menu():
-    lines = ["🌐 *Please select your language / कृपया अपनी भाषा चुनें*"]
+    lines = ["🌐 *Please select your language*"]
     lines.append("")
-    for i, (_, name) in enumerate(LANGUAGES, 1):
+    for i, (code, name) in enumerate(AVAILABLE_LANGUAGES, 1):
         lines.append(f"{i}. {name}")
     lines.append("")
-    lines.append("Reply with the number. Example: 2 for हिन्दी")
+    lines.append("Reply with the number. Example: 1 for English")
     return "\n".join(lines)
 
