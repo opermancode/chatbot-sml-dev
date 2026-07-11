@@ -24,11 +24,6 @@ LANGUAGES = [
     ("brx", "बड़ो"),
 ]
 
-AVAILABLE_LANGUAGES = [(code, name) for code, name in LANGUAGES if code in TEXT]
-LANGUAGE_BY_NUMBER = {str(i): code for i, (code, _) in enumerate(AVAILABLE_LANGUAGES, 1)}
-LANGUAGE_NAMES = dict(AVAILABLE_LANGUAGES)
-
-
 TEXT = {
     "en": {
         "hello": "Hello",
@@ -168,6 +163,10 @@ ALIASES = {
     "kok": "hi", "mai": "hi", "ks": "hi", "sd": "hi", "sa": "hi",
     "mni": "hi", "sat": "hi", "doi": "hi", "brx": "hi",
 }
+
+AVAILABLE_LANGUAGES = [(code, name) for code, name in LANGUAGES if code in TEXT]
+LANGUAGE_BY_NUMBER = {str(i): code for i, (code, _) in enumerate(AVAILABLE_LANGUAGES, 1)}
+LANGUAGE_NAMES = dict(AVAILABLE_LANGUAGES)
 
 
 def normalize_lang(lang):
