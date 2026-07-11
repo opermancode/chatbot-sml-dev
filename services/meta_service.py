@@ -1,5 +1,4 @@
 import requests
-import json
 
 META_API_BASE = "https://graph.facebook.com/v21.0"
 
@@ -25,8 +24,43 @@ def send_whatsapp(to: str, body: str, access_token=None,
     return _post(url, headers, payload)
 
 
+def send_interactive(to: str, body_text: str, buttons: list,
+                     footer_text: str = "", access_token=None,
+                     phone_number_id=None):
+    token = access_token
+    pid = phone_number_id
+    if not token or not pid:
+        raise ValueError("Meta access_token and phone_number_id are required")
+
+    url = f"{META_API_BASE}/{pid}/messages"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+    }
+    action_buttons = []
+    for b in buttons[:3]:
+        action_buttons.append({
+            "type": "reply",
+            "reply": {"id": str(b["id"]), "title": str(b["title"])[:20]},
+        })
+    interactive = {
+        "type": "button",
+        "body": {"text": body_text[:1024]},
+        "action": {"buttons": action_buttons},
+    }
+    if footer_text:
+        interactive["footer"] = {"text": footer_text[:60]}
+    payload = {
+        "messaging_product": "whatsapp",
+        "to": to,
+        "type": "interactive",
+        "interactive": interactive,
+    }
+    return _post(url, headers, payload)
+
+
 def send_template(to: str, template_name: str, lang_code: str = "en",
-                  body_params: list[str] | None = None,
+                  body_params=None,
                   access_token=None, phone_number_id=None):
     token = access_token
     pid = phone_number_id
