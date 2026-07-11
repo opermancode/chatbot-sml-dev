@@ -18,7 +18,7 @@ from twilio.twiml.messaging_response import MessagingResponse
 from services.chatbot import handle_incoming, handle_location, log_chat
 from services.weather_service import get_weather, format_weather_forecast
 from services.twilio_service import send_whatsapp as twilio_send
-from services.meta_service import send_whatsapp as meta_send, send_template as meta_send_template, send_interactive as meta_send_interactive
+from services.meta_service import send_whatsapp as meta_send, send_template as meta_send_template
 
 _basedir = os.path.abspath(os.path.dirname(__file__))
 app = Flask(__name__, instance_path=os.path.join(_basedir, "instance"))
@@ -398,29 +398,6 @@ def admin_settings():
 # ─── Webhook (Twilio & Meta) ─────────────────────────────────────────────
 
 
-def _extract_button_title(text, marker):
-    for line in text.split("\n"):
-        if marker in line:
-            title = line.split(marker, 1)[-1].strip()
-            title = title.replace("*", "").replace("_", "").strip()
-            return title[:20].strip()
-    return ""
-
-
-def _meta_buttons(text):
-    has_1 = "1️⃣" in text
-    has_2 = "2️⃣" in text
-    has_3 = "3️⃣" in text
-    buttons = []
-    if has_1:
-        buttons.append({"id": "1", "title": _extract_button_title(text, "1️⃣") or "Option 1"})
-    if has_2:
-        buttons.append({"id": "2", "title": _extract_button_title(text, "2️⃣") or "Option 2"})
-    if has_3:
-        buttons.append({"id": "3", "title": _extract_button_title(text, "3️⃣") or "Option 3"})
-    return buttons if 1 <= len(buttons) <= 3 else None
-
-
 def _parse_twilio():
     phone = request.form.get("From", "").replace("whatsapp:", "").strip()
     if phone and not phone.startswith("+"):
@@ -533,15 +510,8 @@ def webhook_whatsapp():
     print(f"[WEBHOOK] response len={len(response)}", file=sys.stderr, flush=True)
 
     if provider == "meta":
-        token = get_app_setting("meta_whatsapp_token", "META_WHATSAPP_TOKEN")
-        pid = get_app_setting("meta_phone_number_id", "META_PHONE_NUMBER_ID")
         try:
-            buttons = _meta_buttons(response)
-            if buttons:
-                meta_send_interactive(phone, response, buttons,
-                                      footer_text="Sangreen Renewables", token=token, pid=pid)
-            else:
-                meta_send(phone, response, token, pid)
+            send_provider(phone, response)
         except Exception as e:
             print(f"[WEBHOOK] Meta send error: {e}", file=sys.stderr, flush=True)
         return "", 200
