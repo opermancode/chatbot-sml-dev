@@ -25,6 +25,11 @@ app = Flask(__name__, instance_path=os.path.join(_basedir, "instance"))
 app.config.from_object(Config)
 db.init_app(app)
 
+from services.chatlog_db import format_ist_dt, format_ist_date, format_ist_time
+app.add_template_global(format_ist_dt, name="format_ist_dt")
+app.add_template_global(format_ist_date, name="format_ist_date")
+app.add_template_global(format_ist_time, name="format_ist_time")
+
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "admin_login"
