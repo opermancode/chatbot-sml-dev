@@ -33,7 +33,7 @@ TEXT = {
         "current_weather": "Current Weather",
         "forecast_date": "Forecast for a Date",
         "reply_1_2": "Reply with 1 or 2",
-        "weather_bot": "Sangreen Renewables Weather Bot",
+        "weather_bot": "SML — Weather Intelligence Platform",
         "get_current": "Get Current Weather",
         "share_how": "How would you like to share your location?",
         "share_live": "Share Live Location",
@@ -98,7 +98,7 @@ TEXT = {
         "current_weather": "वर्तमान मौसम",
         "forecast_date": "तारीख का पूर्वानुमान",
         "reply_1_2": "1 या 2 लिखें",
-        "weather_bot": "संग्रीन रिन्यूएबल्स मौसम बॉट",
+        "weather_bot": "SML — मौसम इंटेलिजेंस प्लेटफॉर्म",
         "get_current": "वर्तमान मौसम देखें",
         "share_how": "आप लोकेशन कैसे देना चाहेंगे?",
         "share_live": "लाइव लोकेशन शेयर करें",
@@ -186,4 +186,3 @@ def language_menu():
     lines.append("")
     lines.append("Reply with the number. Example: 1 for English")
     return "\n".join(lines)
-
