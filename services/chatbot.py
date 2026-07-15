@@ -88,13 +88,13 @@ def wind_height_menu(lang, invalid=False):
 
 
 def welcome_msg(user, lang="en"):
-    lines = [f"👋 *{t(lang, 'hello')} {user.name}!*"]
+    lines = [f"🌤 *SML — Weather Intelligence Platform*"]
+    lines.append("")
+    lines.append(f"👋 *{t(lang, 'hello')} {user.name}!*")
     if user.site:
         lines.append(f"📍 {t(lang, 'site')}: {user.site}")
     if user.city:
         lines.append(f"🏙 {t(lang, 'city')}: {user.city}")
-    lines.append("")
-    lines.append(f"🌤 *{t(lang, 'weather_bot')}*")
     lines.append("")
     lines.append(t(lang, "choose_option"))
     lines.append(f"1️⃣ *{t(lang, 'current_weather')}*")
