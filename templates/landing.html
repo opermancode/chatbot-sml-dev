@@ -809,6 +809,107 @@
             return dirs[Math.round(deg / 22.5) % 16];
         }
 
+        function drawWindRose(canvasId, timeData, speedData, dirData) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas || !timeData || !timeData.length) return;
+            const container = canvas.parentElement;
+            const size = Math.min(container.clientWidth || 280, 300);
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = size * dpr;
+            canvas.height = size * dpr;
+            canvas.style.width = size + 'px';
+            canvas.style.height = size + 'px';
+            const ctx = canvas.getContext('2d');
+            ctx.scale(dpr, dpr);
+            const cx = size / 2, cy = size / 2;
+            const radius = size * 0.36;
+            const dirLabels = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+            const numDirs = 16;
+            const speedRanges = [
+                { max: 5, color: '#A8E6C3', label: '0-5' },
+                { max: 10, color: '#FFE39B', label: '5-10' },
+                { max: 15, color: '#FFB07C', label: '10-15' },
+                { max: 20, color: '#FF8A8A', label: '15-20' },
+                { max: Infinity, color: '#C084FC', label: '20+' },
+            ];
+            const bins = Array.from({length: numDirs}, () => new Array(speedRanges.length).fill(0));
+            for (let i = 0; i < timeData.length; i++) {
+                const speed = speedData[i], dir = dirData[i];
+                if (speed == null || dir == null) continue;
+                const d = Math.round(dir / 22.5) % numDirs;
+                const s = speedRanges.findIndex(r => speed <= r.max);
+                if (s >= 0) bins[d][s]++;
+            }
+            const maxDirTotal = Math.max(1, ...bins.map(r => r.reduce((a, b) => a + b, 0)));
+            const numRings = 4;
+            for (let r = 1; r <= numRings; r++) {
+                const ringR = radius * (r / numRings);
+                ctx.beginPath();
+                ctx.arc(cx, cy, ringR, 0, Math.PI * 2);
+                ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([2, 3]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.fillStyle = 'rgba(255,255,255,0.35)';
+                ctx.font = '8px sans-serif';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'top';
+                ctx.fillText(Math.round(r / numRings * 100) + '%', cx + 3, cy - ringR + 2);
+            }
+            for (let d = 0; d < 16; d += 4) {
+                const angle = -Math.PI / 2 + d * (2 * Math.PI / 16);
+                const lr = radius + 14;
+                ctx.fillStyle = 'rgba(255,255,255,0.75)';
+                ctx.font = 'bold 11px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(dirLabels[d], cx + Math.cos(angle) * lr, cy + Math.sin(angle) * lr);
+            }
+            const angleStep = (2 * Math.PI) / numDirs;
+            for (let d = 0; d < numDirs; d++) {
+                const dirTotal = bins[d].reduce((a, b) => a + b, 0);
+                if (dirTotal === 0) continue;
+                const freq = dirTotal / maxDirTotal;
+                const petalR = radius * freq;
+                const halfAngle = angleStep * 0.44;
+                const midAngle = -Math.PI / 2 + d * angleStep;
+                let outerR = petalR;
+                for (let s = speedRanges.length - 1; s >= 0; s--) {
+                    const count = bins[d][s];
+                    if (count === 0) continue;
+                    const innerR = Math.max(0, outerR - radius * (count / maxDirTotal));
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, outerR, midAngle - halfAngle, midAngle + halfAngle);
+                    ctx.arc(cx, cy, innerR, midAngle + halfAngle, midAngle - halfAngle, true);
+                    ctx.closePath();
+                    ctx.fillStyle = speedRanges[s].color;
+                    ctx.fill();
+                    outerR = innerR;
+                }
+            }
+            ctx.beginPath();
+            ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            ctx.fill();
+            const lx = 10, ly = size - 82;
+            ctx.fillStyle = 'rgba(255,255,255,0.5)';
+            ctx.font = '8px sans-serif';
+            speedRanges.forEach((sr, i) => {
+                const y = ly + i * 14;
+                ctx.fillStyle = sr.color;
+                ctx.fillRect(lx, y, 10, 9);
+                ctx.fillStyle = 'rgba(255,255,255,0.65)';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(sr.label, lx + 14, y + 5);
+            });
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            ctx.font = '8px sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText('km/h', lx, ly - 8);
+        }
+
         function fmtHour(iso) {
             const d = new Date(iso);
             let h = d.getHours(), m = d.getMinutes();
@@ -863,6 +964,7 @@
                         'temperature_2m', 'precipitation_probability', 'precipitation', 'weather_code',
                         'cloud_cover', 'visibility', 'wind_speed_10m', 'wind_speed_80m',
                         'wind_speed_120m', 'wind_speed_180m', 'wind_gusts_10m', 'uv_index',
+                        'wind_direction_10m',
                     ].join(','),
                     temporal_resolution: 'minutely_30',
 
@@ -927,6 +1029,7 @@
             const hWind80 = hSlice(hourly.wind_speed_80m);
             const hWind120 = hSlice(hourly.wind_speed_120m);
             const hWind180 = hSlice(hourly.wind_speed_180m);
+            const hWindDir10 = hSlice(hourly.wind_direction_10m);
 
             const hourlyCardsHtml = hTime.map((t, i) => `
                 <div class="hourly-card glass-card py-3 px-1">
@@ -1002,9 +1105,15 @@
                     <div class="hourly-scroll">${hourlyCardsHtml}</div>
                 </div>
 
-                <div class="bg-white rounded-2xl shadow-xl p-5 mt-8">
-                    <div class="eyebrow mb-4">Hourly Wind Speed by Height (next 24h)</div>
-                    <div style="position:relative;height:200px;"><canvas id="wWindChart"></canvas></div>
+                <div class="grid md:grid-cols-2 gap-4 mt-8">
+                    <div class="glass-card p-5">
+                        <div class="glass-eyebrow mb-3">Wind Rose — Direction & Speed Distribution (10m)</div>
+                        <div class="flex justify-center"><canvas id="wWindRose"></canvas></div>
+                    </div>
+                    <div class="bg-white rounded-2xl shadow-xl p-5">
+                        <div class="eyebrow mb-4">Hourly Wind Speed by Height (next 24h)</div>
+                        <div style="position:relative;height:200px;"><canvas id="wWindChart"></canvas></div>
+                    </div>
                 </div>
             `;
 
@@ -1042,6 +1151,9 @@
             } else if (ctx) {
                 ctx.parentElement.innerHTML = '<p class="text-slate text-sm p-4 text-center">Wind speed chart unavailable</p>';
             }
+
+            // Wind rose
+            drawWindRose('wWindRose', hTime, hWind10, hWindDir10);
         }
 
         // ─── Forecast ──────────────────────────────────────────────
