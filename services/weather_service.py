@@ -258,7 +258,7 @@ def format_hourly_forecast(data: dict, city_name="", date="", lang="en", wind_he
 
     lines.append("```")
     lines.append("")
-    lines.append(f"🛡 *Sangreen Renewables* - {t(lang, 'safe')}")
+    lines.append(f"🛡 *SML — Weather Intelligence Platform* — {t(lang, 'safe')}")
     return "\n".join(lines)
 
 
@@ -318,5 +318,5 @@ def format_weather_forecast(data: dict) -> str:
         )
 
     lines.append("")
-    lines.append("⚠️ *Sangreen Renewables* — Stay safe!")
+    lines.append("⚠️ *SML — Weather Intelligence Platform* — Stay safe!")
     return "\n".join(lines)
