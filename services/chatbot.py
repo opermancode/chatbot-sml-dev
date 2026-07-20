@@ -190,12 +190,7 @@ def parse_date(text):
 
 
 def get_or_create_user(phone):
-    user = User.query.filter_by(phone=phone).first()
-    if not user:
-        user = User(name=phone, phone=phone, is_active=True)
-        db.session.add(user)
-        db.session.commit()
-    return user
+    return User.query.filter_by(phone=phone).first()
 
 
 def log_chat(phone, message, response, direction,
@@ -549,6 +544,8 @@ def handle_incoming(phone, message):
 
 def handle_location(phone, lat, lon):
     user = get_or_create_user(phone)
+    if not user:
+        return None
     user_id = user.id if user else None
     lang = get_user_language(phone)
 
