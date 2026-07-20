@@ -17,6 +17,18 @@ from services.weather_service import (
 
 GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search"
 
+
+def parse_coords(text):
+    m = re.match(
+        r'^\s*([+-]?\d+\.?\d*)\s*[,; ]\s*([+-]?\d+\.?\d*)\s*$', text
+    )
+    if m:
+        lat = float(m.group(1))
+        lon = float(m.group(2))
+        if -90 <= lat <= 90 and -180 <= lon <= 180:
+            return lat, lon
+    return None
+
 user_state = {}
 _state_lock = threading.Lock()
 
@@ -112,6 +124,8 @@ def current_weather_menu(lang):
         t(lang, "location_prompt_body"),
         "",
         t(lang, "city_prompt"),
+        "",
+        "Or enter coordinates as lat, lon (e.g. 19.08, 72.88)",
     ])
 
 
@@ -132,6 +146,8 @@ def forecast_loc_menu(lang):
         t(lang, "location_prompt_body"),
         "",
         t(lang, "city_prompt"),
+        "",
+        "Or enter coordinates as lat, lon (e.g. 19.08, 72.88)",
     ])
 
 
@@ -420,7 +436,20 @@ def handle_incoming(phone, message):
             log_chat(phone, message, resp, "outgoing", user_id=user_id)
             return resp
 
-        city = message.strip()
+        text = message.strip()
+        coords = parse_coords(text)
+        if coords:
+            lat, lon = coords
+            _set_state(phone, "awaiting_forecast_wind_height")
+            _set_state(phone + "_fc_lat", lat)
+            _set_state(phone + "_fc_lon", lon)
+            _set_state(phone + "_fc_name", f"({lat}, {lon})")
+            resp = wind_height_menu(lang)
+            log_chat(phone, message, resp, "outgoing",
+                     message_type="wind_height_prompt", user_id=user_id)
+            return resp
+
+        city = text
         geo = geocode_city(city)
         if not geo:
             resp = f"{t(lang, 'not_found_city')} '{city}'."
@@ -464,12 +493,31 @@ def handle_incoming(phone, message):
 
     # ─── Weather sub-menu ──────────────────────────────────────────────
     if state == "weather_menu":
-        _clear_state(phone)
-        _set_state(phone, "menu")
-        resp = weather_for_city(message.strip(), lang=lang)
+        text = message.strip()
+        coords = parse_coords(text)
+        if coords:
+            lat, lon = coords
+            _set_state(phone, "awaiting_current_wind_height")
+            _set_state(phone + "_lat", lat)
+            _set_state(phone + "_lon", lon)
+            resp = wind_height_menu(lang)
+            log_chat(phone, message, resp, "outgoing",
+                     message_type="wind_height_prompt", user_id=user_id)
+            return resp
+
+        geo = geocode_city(text)
+        if not geo:
+            resp = f"{t(lang, 'not_found_city')} '{text}'."
+            log_chat(phone, message, resp, "outgoing", user_id=user_id)
+            return resp
+
+        _set_state(phone, "awaiting_current_wind_height")
+        _set_state(phone + "_lat", geo["lat"])
+        _set_state(phone + "_lon", geo["lon"])
+        resp = wind_height_menu(lang)
         log_chat(phone, message, resp, "outgoing",
-                 message_type="city_weather", user_id=user_id)
-        return resp + "\n\n" + t(lang, "reply_main")
+                 message_type="wind_height_prompt", user_id=user_id)
+        return resp
 
     # ─── Main menu ─────────────────────────────────────────────────────
     if msg == "1":
